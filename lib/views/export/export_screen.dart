@@ -1,0 +1,128 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../../models/connected_app.dart';
+import '../../models/export_job.dart';
+import '../../theme/app_theme.dart';
+import '../../viewmodels/export_provider.dart';
+
+/// レポートエクスポート（Should機能）: 審査履歴・リジェクト理由・ビルド失敗ログをPDF/CSVで出力。
+/// 審査対応の記録保存・外注先共有等の用途を想定（設計書 Step3）。
+/// MVPは単一アプリのみ対応（全アプリ集約エクスポートは次フェーズ）。
+class ExportScreen extends ConsumerStatefulWidget {
+  final ConnectedApp app;
+  const ExportScreen({super.key, required this.app});
+
+  @override
+  ConsumerState<ExportScreen> createState() => _ExportScreenState();
+}
+
+class _ExportScreenState extends ConsumerState<ExportScreen> {
+  ExportFormat _format = ExportFormat.pdf;
+
+  @override
+  void initState() {
+    super.initState();
+    // 画面を出入りするたびに前回の結果を引きずらないようリセットする。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(exportProvider.notifier).reset();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final exportState = ref.watch(exportProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: Text('エクスポート・${widget.app.displayName}')),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('審査履歴・リジェクト理由・ビルド失敗ログを1つのファイルにまとめます。',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            const SizedBox(height: 20),
+            SegmentedButton<ExportFormat>(
+              segments: const [
+                ButtonSegment(value: ExportFormat.pdf, label: Text('PDF')),
+                ButtonSegment(value: ExportFormat.csv, label: Text('CSV')),
+              ],
+              selected: {_format},
+              onSelectionChanged: (s) => setState(() => _format = s.first),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: exportState is AsyncLoading
+                  ? null
+                  : () => ref.read(exportProvider.notifier).runExport(
+                        app: widget.app,
+                        format: _format,
+                      ),
+              child: exportState is AsyncLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('エクスポートを生成'),
+            ),
+            const SizedBox(height: 20),
+            if (exportState != null) _ExportResult(state: exportState),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExportResult extends StatelessWidget {
+  final AsyncValue<ExportJob> state;
+  const _ExportResult({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    return state.when(
+      loading: () => const SizedBox.shrink(),
+      error: (e, _) => Text('エクスポートに失敗しました: $e',
+          style: const TextStyle(color: AppTheme.danger)),
+      data: (job) {
+        if (job.status == ExportJobStatus.failed) {
+          return const Text('エクスポートに失敗しました',
+              style: TextStyle(color: AppTheme.danger));
+        }
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: AppTheme.primary),
+                    const SizedBox(width: 8),
+                    Text('${job.format.name.toUpperCase()} を生成しました'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '有効期限: ${job.expiresAt?.toLocal().toString().substring(0, 16) ?? '-'}まで',
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.share_outlined),
+                  label: const Text('共有'),
+                  onPressed: job.fileUrl == null
+                      ? null
+                      : () => Share.shareXFiles([XFile(job.fileUrl!)]),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

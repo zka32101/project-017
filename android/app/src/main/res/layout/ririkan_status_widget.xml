@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- リリカン ホーム画面ウィジェット（Should機能の土台）。RirikanStatusWidgetProviderが値を反映する。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0B0F14"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/widget_attention_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textColor="#F5A623"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_latest_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="@string/widget_no_attention"
+        android:textColor="#E6EDF3"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/widget_app_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textColor="#8B98A5"
+        android:textSize="11sp" />
+</LinearLayout>

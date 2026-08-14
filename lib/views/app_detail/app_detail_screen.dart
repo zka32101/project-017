@@ -121,7 +121,10 @@ class _ReviewHistoryTab extends ConsumerWidget {
               },
             ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const _EmptyTab(message: '取得に失敗しました'),
+      error: (e, _) => _ErrorTab(
+        error: e,
+        onRetry: () => ref.invalidate(reviewHistoryProvider(app)),
+      ),
     );
   }
 }
@@ -152,7 +155,10 @@ class _CrashTrendTab extends ConsumerWidget {
               },
             ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const _EmptyTab(message: '取得に失敗しました'),
+      error: (e, _) => _ErrorTab(
+        error: e,
+        onRetry: () => ref.invalidate(crashSummariesProvider(app)),
+      ),
     );
   }
 }
@@ -169,7 +175,10 @@ class _RevenueTab extends ConsumerWidget {
           ? const _EmptyTab(message: '売上データはまだありません')
           : _RevenueList(items: items),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const _EmptyTab(message: '取得に失敗しました'),
+      error: (e, _) => _ErrorTab(
+        error: e,
+        onRetry: () => ref.invalidate(revenueSummaryProvider(app)),
+      ),
     );
   }
 }
@@ -193,7 +202,7 @@ class _RevenueList extends StatelessWidget {
               Expanded(
                 child: _SummaryStat(
                   label: '直近${items.length}日 売上',
-                  value: '¥${totalRevenue.toStringAsFixed(0)}',
+                  value: '$currency ${totalRevenue.toStringAsFixed(0)}',
                 ),
               ),
               const SizedBox(width: 12),
@@ -275,7 +284,10 @@ class _RejectionTab extends ConsumerWidget {
               },
             ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const _EmptyTab(message: '取得に失敗しました'),
+      error: (e, _) => _ErrorTab(
+        error: e,
+        onRetry: () => ref.invalidate(rejectionDetailsProvider(app)),
+      ),
     );
   }
 }
@@ -304,7 +316,10 @@ class _BuildFailureTab extends ConsumerWidget {
               },
             ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const _EmptyTab(message: '取得に失敗しました'),
+      error: (e, _) => _ErrorTab(
+        error: e,
+        onRetry: () => ref.invalidate(buildFailureLogsProvider(app)),
+      ),
     );
   }
 }
@@ -317,6 +332,35 @@ class _EmptyTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(message, style: const TextStyle(color: AppTheme.textSecondary)),
+    );
+  }
+}
+
+/// 通信失敗時の表示。ServiceFailure が例外として伝播するようになったことで、
+/// 「データが本当に無い」（_EmptyTab）と区別して原因メッセージ＋再試行を出せる。
+class _ErrorTab extends StatelessWidget {
+  final Object error;
+  final VoidCallback onRetry;
+  const _ErrorTab({required this.error, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: AppTheme.danger, size: 32),
+            const SizedBox(height: 12),
+            Text('$error',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppTheme.textSecondary)),
+            const SizedBox(height: 12),
+            OutlinedButton(onPressed: onRetry, child: const Text('再試行')),
+          ],
+        ),
+      ),
     );
   }
 }

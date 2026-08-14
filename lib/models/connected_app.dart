@@ -62,4 +62,16 @@ class ConnectedApp {
         'displayName': displayName,
         'sortOrder': sortOrder,
       };
+
+  /// id ベースの値等価性。ConnectedApp は FutureProvider.family のキーとして
+  /// 多数のプロバイダ（crashSummariesProvider 等）に渡されるため、これが無いと
+  /// copyWith で生成した新インスタンスがデフォルトの参照比較で「別のアプリ」と
+  /// 扱われ、並べ替えのたびに全アプリ分のキャッシュが破棄されて再フェッチが走る。
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConnectedApp && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

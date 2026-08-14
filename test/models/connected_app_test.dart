@@ -49,5 +49,41 @@ void main() {
       expect(moved.displayName, app.displayName);
       expect(moved.id, app.id);
     });
+
+    test('id が同じなら他フィールドが違っても等価（Riverpod familyキャッシュ維持のため）', () {
+      const app = ConnectedApp(
+        id: 'app1',
+        userId: 'user1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.ririkan',
+        displayName: 'リリカン',
+        sortOrder: 0,
+      );
+      final movedCopy = app.copyWith(sortOrder: 5, displayName: '別名');
+
+      expect(movedCopy, equals(app));
+      expect(movedCopy.hashCode, equals(app.hashCode));
+    });
+
+    test('id が異なれば非等価', () {
+      const app1 = ConnectedApp(
+        id: 'app1',
+        userId: 'user1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.ririkan',
+        displayName: 'リリカン',
+        sortOrder: 0,
+      );
+      const app2 = ConnectedApp(
+        id: 'app2',
+        userId: 'user1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.ririkan',
+        displayName: 'リリカン',
+        sortOrder: 0,
+      );
+
+      expect(app1, isNot(equals(app2)));
+    });
   });
 }

@@ -124,11 +124,21 @@ void main() {
         apiKey: 'k',
       );
 
+      final before = container.read(connectedAppsProvider);
+
       // A,B,C → 先頭(A)を末尾(index 2)に移動 → B,C,A
       notifier.reorder(0, 2);
 
-      final names = container.read(connectedAppsProvider).map((a) => a.displayName).toList();
+      final after = container.read(connectedAppsProvider);
+      final names = after.map((a) => a.displayName).toList();
       expect(names, ['B', 'C', 'A']);
+
+      // reorder は sortOrder 更新のため全アプリを copyWith するが、id ベースの
+      // 等価性により「同じアプリ」として扱われる必要がある（Riverpod の
+      // FutureProvider.family キャッシュが並べ替えのたびに全破棄されないように）。
+      for (final app in before) {
+        expect(after, contains(app));
+      }
     });
 
     test('removeAppでstateとストレージ双方から削除される', () async {
@@ -142,6 +152,40 @@ void main() {
       );
       await notifier.removeApp(app.id);
       expect(container.read(connectedAppsProvider), isEmpty);
+    });
+  });
+
+  group('ConnectedAppsNotifier.initializeDemoAppsIfNeeded', () {
+    test('同時に複数回呼んでもデモアプリは1組しか登録されない（二重登録レースの防止）', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+
+      // dashboard_screen が build のたびに postFrameCallback から呼ぶ状況を模した、
+      // 完了を待たない並行呼び出し。
+      await Future.wait([
+        notifier.initializeDemoAppsIfNeeded(),
+        notifier.initializeDemoAppsIfNeeded(),
+        notifier.initializeDemoAppsIfNeeded(),
+      ]);
+
+      expect(container.read(connectedAppsProvider), hasLength(2));
+    });
+
+    test('再セットしてもデモアプリのIDは毎回同じ（Secure Storageのキー蓄積防止）', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+
+      await notifier.initializeDemoAppsIfNeeded();
+      final firstIds =
+          container.read(connectedAppsProvider).map((a) => a.id).toSet();
+
+      // 全アプリ削除後、再度呼ばれても同じIDで登録される（stateが空なら再セットする既存仕様）。
+      for (final app in container.read(connectedAppsProvider)) {
+        await notifier.removeApp(app.id);
+      }
+      await notifier.initializeDemoAppsIfNeeded();
+      final secondIds =
+          container.read(connectedAppsProvider).map((a) => a.id).toSet();
+
+      expect(secondIds, equals(firstIds));
     });
   });
 }

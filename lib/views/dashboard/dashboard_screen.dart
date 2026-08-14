@@ -112,7 +112,7 @@ class _AppStatusCard extends ConsumerWidget {
         subtitle: statusAsync.when(
           data: (s) => Text(s == null ? '状態未取得' : '${s.versionString} ・ ${s.statusType.label}'),
           loading: () => const Text('取得中…'),
-          error: (_, _) => const Text('取得失敗'),
+          error: (e, _) => Text('$e', maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
         trailing: statusAsync.when(
           data: (s) => Container(
@@ -130,8 +130,11 @@ class _AppStatusCard extends ConsumerWidget {
             height: 12,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          error: (_, _) => const Icon(Icons.error_outline,
-              size: 16, color: AppTheme.danger),
+          error: (_, _) => IconButton(
+            icon: const Icon(Icons.refresh, size: 18, color: AppTheme.danger),
+            tooltip: '再試行',
+            onPressed: () => ref.invalidate(latestReviewStatusProvider(app)),
+          ),
         ),
       ),
     );

@@ -33,9 +33,16 @@ final widgetSyncProvider = FutureProvider<void>((ref) async {
     }
   }
 
-  await service.syncSummary(
-    totalApps: apps.length,
-    attentionCount: attentionCount,
-    topAttentionApp: topAttentionApp,
-  );
+  try {
+    await service.syncSummary(
+      totalApps: apps.length,
+      attentionCount: attentionCount,
+      topAttentionApp: topAttentionApp,
+    );
+  } catch (_) {
+    // ネイティブ側（HomeWidgetのプラットフォームチャネル）の失敗でも、この関数の
+    // コメント通り「失敗してもダッシュボード表示は継続」を実際に守る。ここを
+    // try/catchで囲まないと、全アプリの集計自体は成功していても
+    // widgetSyncProvider全体がAsyncErrorになり、ここまでの集計結果が失われる。
+  }
 });

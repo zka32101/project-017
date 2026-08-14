@@ -70,6 +70,37 @@ class _DeleteFailsSecureStorageService extends SecureStorageService {
       throw Exception('削除に失敗しました（テスト用）');
 }
 
+/// n回目のsaveApiKey呼び出しだけ失敗する（1回目は成功、2回目は失敗、等）フェイク。
+/// デモアプリ2件のうち片方だけ登録に成功する状況を再現するために使う。
+class _FailsOnNthSaveSecureStorageService extends SecureStorageService {
+  _FailsOnNthSaveSecureStorageService(this._failOnCallNumber);
+
+  final int _failOnCallNumber;
+  final Map<String, String> _memory = {};
+  var _callCount = 0;
+
+  @override
+  Future<void> saveApiKey({
+    required String connectedAppId,
+    required String apiKey,
+  }) async {
+    _callCount++;
+    if (_callCount == _failOnCallNumber) {
+      throw Exception('保存に失敗しました（テスト用、$_callCount回目）');
+    }
+    _memory[SecureStorageService.refKeyFor(connectedAppId)] = apiKey;
+  }
+
+  @override
+  Future<String?> readApiKey(String connectedAppId) async =>
+      _memory[SecureStorageService.refKeyFor(connectedAppId)];
+
+  @override
+  Future<void> deleteApiKey(String connectedAppId) async {
+    _memory.remove(SecureStorageService.refKeyFor(connectedAppId));
+  }
+}
+
 void main() {
   late ProviderContainer container;
 
@@ -226,6 +257,33 @@ void main() {
           container.read(connectedAppsProvider).map((a) => a.id).toSet();
 
       expect(secondIds, equals(firstIds));
+    });
+
+    test('デモアプリ2件のうち片方だけ登録に失敗した場合、片方だけ残らずロールバックされ次回再試行できる', () async {
+      // 1回目のsaveApiKey（iOSデモアプリ）は成功、2回目（Androidデモアプリ）は失敗する。
+      final flaky = _FailsOnNthSaveSecureStorageService(2);
+      final flakyContainer = ProviderContainer(
+        overrides: [secureStorageServiceProvider.overrideWithValue(flaky)],
+      );
+      addTearDown(flakyContainer.dispose);
+
+      final notifier = flakyContainer.read(connectedAppsProvider.notifier);
+
+      await expectLater(
+        notifier.initializeDemoAppsIfNeeded(),
+        throwsA(isA<Exception>()),
+      );
+
+      // 片方だけ登録された状態で終わっていない（ロールバック済み）ことを確認。
+      // これが無いと、次回呼び出し時に state.isNotEmpty のガードにより
+      // 残り1件が永久に登録されないままになってしまう。
+      expect(flakyContainer.read(connectedAppsProvider), isEmpty);
+
+      // _FailsOnNthSaveSecureStorageServiceは2回目のsaveApiKey呼び出しだけを
+      // 失敗させるため、以降の呼び出し（＝再試行）は正常に成功する。
+      // 次回呼び出しで最初からやり直して2件とも登録できることを確認する。
+      await notifier.initializeDemoAppsIfNeeded();
+      expect(flakyContainer.read(connectedAppsProvider), hasLength(2));
     });
   });
 

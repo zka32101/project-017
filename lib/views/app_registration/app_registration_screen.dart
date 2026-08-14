@@ -51,15 +51,25 @@ class _AppRegistrationScreenState
       return;
     }
     setState(() => _submitting = true);
-    await ref.read(connectedAppsProvider.notifier).registerApp(
-          userId: 'local_user',
-          platform: _platform,
-          bundleIdOrPackageName: _bundleIdController.text.trim(),
-          displayName: _displayNameController.text.trim(),
-          apiKey: _apiKeyController.text.trim(),
-        );
-    if (!mounted) return;
-    context.go('/initial-scan');
+    try {
+      await ref.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'local_user',
+            platform: _platform,
+            bundleIdOrPackageName: _bundleIdController.text.trim(),
+            displayName: _displayNameController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+          );
+      if (!mounted) return;
+      context.go('/initial-scan');
+    } catch (e) {
+      // APIキーの保存（Secure Storage）失敗などで登録処理が例外を投げても、
+      // ボタンがローディング状態のまま固まったり画面が無反応になったりしないようにする。
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('登録に失敗しました: $e')),
+      );
+    }
   }
 
   @override

@@ -30,6 +30,46 @@ class _FakeSecureStorageService extends SecureStorageService {
   }
 }
 
+/// APIキーの保存（Keychain/EncryptedSharedPreferencesへの書き込み）が失敗するケースを
+/// 再現するフェイク。registerApp が例外を投げっぱなしにせず、呼び出し元
+/// （画面側のtry/catch）まで正しく伝播することを検証するために使う。
+class _SaveFailsSecureStorageService extends SecureStorageService {
+  @override
+  Future<void> saveApiKey({
+    required String connectedAppId,
+    required String apiKey,
+  }) async =>
+      throw Exception('保存に失敗しました（テスト用）');
+
+  @override
+  Future<String?> readApiKey(String connectedAppId) async => null;
+
+  @override
+  Future<void> deleteApiKey(String connectedAppId) async {}
+}
+
+/// APIキーの削除は失敗するが保存・読み取りは _FakeSecureStorageService と同様に
+/// 成功するフェイク。removeApp の例外伝播だけをピンポイントで検証するために使う。
+class _DeleteFailsSecureStorageService extends SecureStorageService {
+  final Map<String, String> _memory = {};
+
+  @override
+  Future<void> saveApiKey({
+    required String connectedAppId,
+    required String apiKey,
+  }) async {
+    _memory[SecureStorageService.refKeyFor(connectedAppId)] = apiKey;
+  }
+
+  @override
+  Future<String?> readApiKey(String connectedAppId) async =>
+      _memory[SecureStorageService.refKeyFor(connectedAppId)];
+
+  @override
+  Future<void> deleteApiKey(String connectedAppId) async =>
+      throw Exception('削除に失敗しました（テスト用）');
+}
+
 void main() {
   late ProviderContainer container;
 
@@ -186,6 +226,59 @@ void main() {
           container.read(connectedAppsProvider).map((a) => a.id).toSet();
 
       expect(secondIds, equals(firstIds));
+    });
+  });
+
+  group('Secure Storage 失敗時の挙動', () {
+    test('registerAppはAPIキー保存に失敗すると例外を投げ、stateは更新されない', () async {
+      final saveFailsContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider
+              .overrideWithValue(_SaveFailsSecureStorageService()),
+        ],
+      );
+      addTearDown(saveFailsContainer.dispose);
+
+      final notifier = saveFailsContainer.read(connectedAppsProvider.notifier);
+      await expectLater(
+        notifier.registerApp(
+          userId: 'u1',
+          platform: PlatformType.ios,
+          bundleIdOrPackageName: 'a',
+          displayName: 'A',
+          apiKey: 'k',
+        ),
+        throwsA(isA<Exception>()),
+      );
+      expect(saveFailsContainer.read(connectedAppsProvider), isEmpty);
+    });
+
+    test('removeAppはキー削除に失敗すると例外を投げ、stateからは消えない', () async {
+      final deleteFailsContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider
+              .overrideWithValue(_DeleteFailsSecureStorageService()),
+        ],
+      );
+      addTearDown(deleteFailsContainer.dispose);
+
+      final notifier = deleteFailsContainer.read(connectedAppsProvider.notifier);
+      final app = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'a',
+        displayName: 'A',
+        apiKey: 'k',
+      );
+
+      await expectLater(
+        notifier.removeApp(app.id),
+        throwsA(isA<Exception>()),
+      );
+      expect(
+        deleteFailsContainer.read(connectedAppsProvider).map((a) => a.id),
+        contains(app.id),
+      );
     });
   });
 }

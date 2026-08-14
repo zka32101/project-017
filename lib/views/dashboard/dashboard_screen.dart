@@ -24,9 +24,15 @@ class DashboardScreen extends ConsumerWidget {
     // （オンボーディング→アプリ登録フロー不要で、直接ダッシュボードからテスト開始可能）
     if (apps.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await ref
-            .read(connectedAppsProvider.notifier)
-            .initializeDemoAppsIfNeeded();
+        try {
+          await ref
+              .read(connectedAppsProvider.notifier)
+              .initializeDemoAppsIfNeeded();
+        } catch (_) {
+          // build() の副作用として発火する投げっぱなしFutureのため、失敗しても
+          // 例外を伝播させない（未捕捉のZoneエラーになるのを防ぐ）。次回このWidgetが
+          // 再ビルドされた際（apps が空のまま）に自動的に再試行される。
+        }
       });
     }
 

@@ -20,21 +20,11 @@ class DashboardScreen extends ConsumerWidget {
     // ホーム画面ウィジェット用データを常に最新化する（Should機能の土台、失敗しても画面表示は継続）。
     ref.watch(widgetSyncProvider);
 
-    // ドッグフーディング・実機テスト用：初回起動時にデモアプリを自動初期化
-    // （オンボーディング→アプリ登録フロー不要で、直接ダッシュボードからテスト開始可能）
-    if (apps.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        try {
-          await ref
-              .read(connectedAppsProvider.notifier)
-              .initializeDemoAppsIfNeeded();
-        } catch (_) {
-          // build() の副作用として発火する投げっぱなしFutureのため、失敗しても
-          // 例外を伝播させない（未捕捉のZoneエラーになるのを防ぐ）。次回このWidgetが
-          // 再ビルドされた際（apps が空のまま）に自動的に再試行される。
-        }
-      });
-    }
+    // 起動時に一度だけ、永続化データの復元 or デモアプリの自動投入を行う
+    // （オンボーディング→アプリ登録フロー不要で、直接ダッシュボードからテスト開始可能）。
+    // AsyncValueは使わずbareでwatchするだけなので、失敗してもこの画面自体は
+    // クラッシュしない（appsが空のままなら _EmptyDashboard が表示される）。
+    ref.watch(appBootstrapProvider);
 
     return Scaffold(
       appBar: AppBar(

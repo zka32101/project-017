@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/connected_app.dart';
 import 'package:ririkan/models/platform_type.dart';
+import 'package:ririkan/services/local_store_service.dart';
 import 'package:ririkan/services/secure_storage_service.dart';
 import 'package:ririkan/services/widget_sync_service.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
@@ -31,6 +32,18 @@ class _FakeSecureStorageService extends SecureStorageService {
   }
 }
 
+/// registerApp内部の永続化(_persist)がpath_providerのプラットフォームチャネルに
+/// 触れないようにするフェイク（connected_apps_notifier_test.dartと同じ理由）。
+class _FakeLocalStoreService extends LocalStoreService {
+  const _FakeLocalStoreService();
+
+  @override
+  Future<LocalState?> load() async => null;
+
+  @override
+  Future<void> save(LocalState state) async {}
+}
+
 /// HomeWidgetのプラットフォームチャネル呼び出しが失敗するケース（未実装のiOS
 /// WidgetKit拡張、Androidでの登録漏れ等）を再現するフェイク。
 class _FailingWidgetSyncService extends WidgetSyncService {
@@ -50,6 +63,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(const _FakeLocalStoreService()),
         widgetSyncServiceProvider.overrideWithValue(const _FailingWidgetSyncService()),
       ],
     );

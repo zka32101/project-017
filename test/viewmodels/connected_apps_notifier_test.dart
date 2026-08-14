@@ -1,10 +1,44 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ririkan/models/connected_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/user_plan.dart';
+import 'package:ririkan/services/local_store_service.dart';
 import 'package:ririkan/services/secure_storage_service.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
 import 'package:ririkan/viewmodels/service_providers.dart';
+
+/// registerApp/reorder/removeApp が内部で呼ぶ永続化(_persist)がpath_providerの
+/// プラットフォームチャネルに触れないようにするフェイク。このファイルは
+/// testWidgetsではなくtest（Flutter bindingを初期化しないプレーンなDartテスト）
+/// のため、未モックのプラットフォームチャネル呼び出しは安全に倒せない。
+class _FakeLocalStoreService extends LocalStoreService {
+  const _FakeLocalStoreService();
+
+  @override
+  Future<LocalState?> load() async => null;
+
+  @override
+  Future<void> save(LocalState state) async {}
+}
+
+/// load()の戻り値を差し込め、save()の呼び出しを記録できるフェイク。
+/// appBootstrapProvider（復元 or デモ投入の分岐）とsetPlan/persistの検証に使う。
+class _SpyLocalStoreService extends LocalStoreService {
+  _SpyLocalStoreService({LocalState? initial}) : _stored = initial;
+
+  LocalState? _stored;
+  int saveCallCount = 0;
+
+  @override
+  Future<LocalState?> load() async => _stored;
+
+  @override
+  Future<void> save(LocalState state) async {
+    _stored = state;
+    saveCallCount++;
+  }
+}
 
 /// 実機のKeychain/EncryptedSharedPreferencesに依存しないインメモリ版。
 /// 単体テストでは flutter_secure_storage のプラットフォームチャネルが無いため、
@@ -108,6 +142,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(const _FakeLocalStoreService()),
       ],
     );
   });
@@ -198,7 +233,7 @@ void main() {
       final before = container.read(connectedAppsProvider);
 
       // A,B,C → 先頭(A)を末尾(index 2)に移動 → B,C,A
-      notifier.reorder(0, 2);
+      await notifier.reorder(0, 2);
 
       final after = container.read(connectedAppsProvider);
       final names = after.map((a) => a.displayName).toList();
@@ -263,7 +298,10 @@ void main() {
       // 1回目のsaveApiKey（iOSデモアプリ）は成功、2回目（Androidデモアプリ）は失敗する。
       final flaky = _FailsOnNthSaveSecureStorageService(2);
       final flakyContainer = ProviderContainer(
-        overrides: [secureStorageServiceProvider.overrideWithValue(flaky)],
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(flaky),
+          localStoreServiceProvider.overrideWithValue(const _FakeLocalStoreService()),
+        ],
       );
       addTearDown(flakyContainer.dispose);
 
@@ -293,6 +331,7 @@ void main() {
         overrides: [
           secureStorageServiceProvider
               .overrideWithValue(_SaveFailsSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(const _FakeLocalStoreService()),
         ],
       );
       addTearDown(saveFailsContainer.dispose);
@@ -316,6 +355,7 @@ void main() {
         overrides: [
           secureStorageServiceProvider
               .overrideWithValue(_DeleteFailsSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(const _FakeLocalStoreService()),
         ],
       );
       addTearDown(deleteFailsContainer.dispose);
@@ -337,6 +377,109 @@ void main() {
         deleteFailsContainer.read(connectedAppsProvider).map((a) => a.id),
         contains(app.id),
       );
+    });
+  });
+
+  group('ConnectedAppsNotifier.restore', () {
+    test('永続化データをそのままstateへ反映する（Secure Storageへの再書き込みはしない）', () {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      const restoredApps = [
+        ConnectedApp(
+          id: 'restored-1',
+          userId: 'u1',
+          platform: PlatformType.ios,
+          bundleIdOrPackageName: 'works.petit.restored',
+          apiKeyRef: 'restored-1',
+          displayName: '復元済みアプリ',
+          sortOrder: 0,
+        ),
+      ];
+
+      notifier.restore(restoredApps);
+
+      expect(container.read(connectedAppsProvider), restoredApps);
+    });
+  });
+
+  group('ConnectedAppsNotifier.setPlan', () {
+    test('userPlanProviderを更新し、永続化(save)を1回呼ぶ', () async {
+      final spy = _SpyLocalStoreService();
+      final spyContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(spy),
+        ],
+      );
+      addTearDown(spyContainer.dispose);
+
+      await spyContainer.read(connectedAppsProvider.notifier).setPlan(UserPlan.pro);
+
+      expect(spyContainer.read(userPlanProvider), UserPlan.pro);
+      expect(spy.saveCallCount, 1);
+    });
+  });
+
+  group('appBootstrapProvider', () {
+    test('永続化データが無ければデモアプリを自動登録する（初回起動と同じ挙動）', () async {
+      final spyContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(_SpyLocalStoreService()),
+        ],
+      );
+      addTearDown(spyContainer.dispose);
+
+      await spyContainer.read(appBootstrapProvider.future);
+
+      expect(spyContainer.read(connectedAppsProvider), hasLength(2));
+    });
+
+    test('永続化された登録アプリがあれば復元し、デモアプリは投入しない', () async {
+      const persistedApp = ConnectedApp(
+        id: 'persisted-1',
+        userId: 'u1',
+        platform: PlatformType.android,
+        bundleIdOrPackageName: 'works.petit.persisted',
+        apiKeyRef: 'persisted-1',
+        displayName: '永続化されたアプリ',
+        sortOrder: 0,
+      );
+      final spy = _SpyLocalStoreService(
+        initial: const LocalState(apps: [persistedApp], plan: UserPlan.pro),
+      );
+      final spyContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(spy),
+        ],
+      );
+      addTearDown(spyContainer.dispose);
+
+      await spyContainer.read(appBootstrapProvider.future);
+
+      expect(
+        spyContainer.read(connectedAppsProvider).map((a) => a.id),
+        ['persisted-1'],
+      );
+      expect(spyContainer.read(userPlanProvider), UserPlan.pro);
+    });
+
+    test('永続化ファイルはあるが登録アプリ一覧が空なら、プランは復元しつつデモアプリを投入する', () async {
+      final spy = _SpyLocalStoreService(
+        initial: const LocalState(apps: [], plan: UserPlan.pro),
+      );
+      final spyContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(spy),
+        ],
+      );
+      addTearDown(spyContainer.dispose);
+
+      await spyContainer.read(appBootstrapProvider.future);
+
+      expect(spyContainer.read(connectedAppsProvider), hasLength(2));
+      expect(spyContainer.read(userPlanProvider), UserPlan.pro);
     });
   });
 }

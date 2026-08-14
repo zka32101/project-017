@@ -37,7 +37,9 @@ class PaywallScreen extends ConsumerWidget {
               const Spacer(),
               ElevatedButton(
                 onPressed: () {
-                  ref.read(userPlanProvider.notifier).state = UserPlan.pro;
+                  // setPlan() 経由にすることでプラン変更も永続化される
+                  // （userPlanProvider.notifier.state を直接書き換えると次回起動時に消える）。
+                  ref.read(connectedAppsProvider.notifier).setPlan(UserPlan.pro);
                   context.pop();
                   context.push('/app-registration');
                 },

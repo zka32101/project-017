@@ -82,9 +82,10 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
   }
 
   Future<void> _seedDemoApps() async {
+    final registeredIds = <String>[];
     try {
       // デモアプリ1: iOS（App Store Connect版 Aha Moment 管理）
-      await registerApp(
+      final iosApp = await registerApp(
         id: _demoIosAppId,
         userId: 'demo_user',
         platform: PlatformType.ios,
@@ -92,9 +93,10 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
         displayName: 'Sample iOS App',
         apiKey: 'demo_api_key_ios_12345',
       );
+      registeredIds.add(iosApp.id);
 
       // デモアプリ2: Android（Play Console版）
-      await registerApp(
+      final androidApp = await registerApp(
         id: _demoAndroidAppId,
         userId: 'demo_user',
         platform: PlatformType.android,
@@ -102,6 +104,20 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
         displayName: 'Sample Android App',
         apiKey: 'demo_api_key_android_67890',
       );
+      registeredIds.add(androidApp.id);
+    } catch (_) {
+      // 2件のうち片方だけ登録できた状態で終わると、initializeDemoAppsIfNeeded()の
+      // 「state.isNotEmptyなら何もしない」ガードにより、以後 stateが空にならず
+      // 残り1件が永久に再試行されなくなる。中途半端に登録できた分は巻き戻し、
+      // 次回の呼び出しで最初からやり直せるようにする。
+      for (final id in registeredIds) {
+        try {
+          await removeApp(id);
+        } catch (_) {
+          // ロールバック自体の失敗は元の例外をマスクしないよう無視する。
+        }
+      }
+      rethrow;
     } finally {
       // 完了後にリセットしておくことで、全アプリ削除後に再度呼ばれた場合は
       // 改めて登録処理が走る（既存の「stateが空なら再セット」という仕様を維持）。

@@ -69,4 +69,32 @@ void main() {
       expect(csv, isNotEmpty);
     });
   });
+
+  group('ExportService.sanitizeForFileName', () {
+    test('パス区切り文字を含む表示名は安全な文字に置換される', () {
+      // app.displayNameはアプリ登録画面の自由入力欄のため、'/'を含む名前が
+      // そのままファイル名に使われると存在しないサブディレクトリを指すパスになり、
+      // 端末への書き込みが必ず失敗していた（実際のバグ）。
+      expect(
+        ExportService.sanitizeForFileName('Petit/Works App'),
+        isNot(contains('/')),
+      );
+      expect(
+        ExportService.sanitizeForFileName(r'a\b:c*d?e"f<g>h|i'),
+        'a_b_c_d_e_f_g_h_i',
+      );
+    });
+
+    test('前後の空白は除去される', () {
+      expect(ExportService.sanitizeForFileName('  My App  '), 'My App');
+    });
+
+    test('空白のみの表示名はフォールバック名を返す', () {
+      expect(ExportService.sanitizeForFileName('   '), 'app');
+    });
+
+    test('通常の日本語アプリ名はそのまま使われる', () {
+      expect(ExportService.sanitizeForFileName('リリカン'), 'リリカン');
+    });
+  });
 }

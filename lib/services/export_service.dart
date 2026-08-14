@@ -37,7 +37,7 @@ class ExportService {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final fileName =
-          'ririkan_export_${app.displayName}_${id.substring(0, 8)}.${format == ExportFormat.pdf ? 'pdf' : 'csv'}';
+          'ririkan_export_${sanitizeForFileName(app.displayName)}_${id.substring(0, 8)}.${format == ExportFormat.pdf ? 'pdf' : 'csv'}';
       final file = File('${dir.path}/$fileName');
 
       if (format == ExportFormat.csv) {
@@ -71,6 +71,16 @@ class ExportService {
         status: ExportJobStatus.failed,
       );
     }
+  }
+
+  /// ファイル名に使うと壊れる文字（パス区切り、制御文字等）をアンダースコアに置換する。
+  /// app.displayName はアプリ登録画面の自由入力のため、'/' や NUL 文字等を含み得る
+  /// （例: 'Petit/Works App' → 'ririkan_export_Petit/Works App_xxx.pdf' という
+  /// 存在しないサブディレクトリを指すパスになり、書き込みが必ず失敗していた）。
+  /// buildCsv/buildPdf と同じ理由（ファイルI/Oを含まない）で公開し単体テスト可能にしている。
+  static String sanitizeForFileName(String name) {
+    final sanitized = name.replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_').trim();
+    return sanitized.isEmpty ? 'app' : sanitized;
   }
 
   /// CSV生成ロジック本体（ファイルI/Oを含まないため単体テスト可能）。

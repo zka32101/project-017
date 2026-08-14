@@ -9,6 +9,10 @@ import 'service_providers.dart';
 /// 登録済みアプリ一覧の状態管理（Must#5: アプリ登録・並び替え）。
 /// 無料プランは2アプリまで（3本目でペイウォール、設計書 Step3.5 R④）。
 class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
+  /// initializeDemoAppsIfNeeded の多重実行防止用（複数箇所から並行して
+  /// 呼ばれても、実際の登録処理は1回しか走らないようにする）。
+  Future<void>? _demoInitFuture;
+
   @override
   List<ConnectedApp> build() => [];
 
@@ -18,18 +22,19 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
     required String bundleIdOrPackageName,
     required String displayName,
     required String apiKey,
+    String? id,
   }) async {
-    final id = const Uuid().v4();
+    final resolvedId = id ?? const Uuid().v4();
     await ref.read(secureStorageServiceProvider).saveApiKey(
-          connectedAppId: id,
+          connectedAppId: resolvedId,
           apiKey: apiKey,
         );
     final app = ConnectedApp(
-      id: id,
+      id: resolvedId,
       userId: userId,
       platform: platform,
       bundleIdOrPackageName: bundleIdOrPackageName,
-      apiKeyRef: id,
+      apiKeyRef: resolvedId,
       displayName: displayName,
       sortOrder: state.length,
     );
@@ -57,30 +62,51 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
   bool wouldHitPaywall(UserPlan plan) =>
       plan == UserPlan.free && state.length >= UserPlan.freeAppLimit;
 
+  /// デモアプリの固定ID。乱数（uuid）にすると、状態がインメモリのみで
+  /// 永続化されていない現状、起動のたびに新しいIDでデモアプリが再登録され、
+  /// Secure Storage（Keychain/EncryptedSharedPreferences）に古いエントリが
+  /// 際限なく残り続けてしまう。固定IDにすることで再登録時は同じキーを
+  /// 上書きするだけになり、余計な秘密情報の蓄積を防ぐ。
+  static const _demoIosAppId = 'demo-app-ios';
+  static const _demoAndroidAppId = 'demo-app-android';
+
   /// ドッグフーディング・実機テスト用：初回起動時にデモアプリを自動登録
   /// （オンボーディング→アプリ登録フロー不要で、直接ダッシュボードからテスト開始可能）
-  Future<void> initializeDemoAppsIfNeeded() async {
+  Future<void> initializeDemoAppsIfNeeded() {
     if (state.isNotEmpty) {
-      return; // 既に登録済みなら何もしない
+      return Future.value(); // 既に登録済みなら何もしない
     }
+    // build() からの副作用として呼ばれるため、短時間に複数回呼ばれても
+    // 登録処理は1回分の Future を共有し、デモアプリの二重登録を防ぐ。
+    return _demoInitFuture ??= _seedDemoApps();
+  }
 
-    // デモアプリ1: iOS（App Store Connect版 Aha Moment 管理）
-    await registerApp(
-      userId: 'demo_user',
-      platform: PlatformType.ios,
-      bundleIdOrPackageName: 'com.yourcompany.sampleios',
-      displayName: 'Sample iOS App',
-      apiKey: 'demo_api_key_ios_12345',
-    );
+  Future<void> _seedDemoApps() async {
+    try {
+      // デモアプリ1: iOS（App Store Connect版 Aha Moment 管理）
+      await registerApp(
+        id: _demoIosAppId,
+        userId: 'demo_user',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'com.yourcompany.sampleios',
+        displayName: 'Sample iOS App',
+        apiKey: 'demo_api_key_ios_12345',
+      );
 
-    // デモアプリ2: Android（Play Console版）
-    await registerApp(
-      userId: 'demo_user',
-      platform: PlatformType.android,
-      bundleIdOrPackageName: 'com.yourcompany.sampleandroid',
-      displayName: 'Sample Android App',
-      apiKey: 'demo_api_key_android_67890',
-    );
+      // デモアプリ2: Android（Play Console版）
+      await registerApp(
+        id: _demoAndroidAppId,
+        userId: 'demo_user',
+        platform: PlatformType.android,
+        bundleIdOrPackageName: 'com.yourcompany.sampleandroid',
+        displayName: 'Sample Android App',
+        apiKey: 'demo_api_key_android_67890',
+      );
+    } finally {
+      // 完了後にリセットしておくことで、全アプリ削除後に再度呼ばれた場合は
+      // 改めて登録処理が走る（既存の「stateが空なら再セット」という仕様を維持）。
+      _demoInitFuture = null;
+    }
   }
 }
 

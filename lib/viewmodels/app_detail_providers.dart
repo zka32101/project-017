@@ -26,8 +26,8 @@ final revenueSummaryProvider =
   switch (result) {
     case ServiceSuccess<List<RevenueSummary>>(:final data):
       return data;
-    case ServiceFailure<List<RevenueSummary>>():
-      return const [];
+    case ServiceFailure<List<RevenueSummary>> failure:
+      throw ServiceFailureException(failure);
   }
 });
 
@@ -40,8 +40,8 @@ final reviewHistoryProvider =
   switch (result) {
     case ServiceSuccess<List<ReviewStatusSnapshot>>(:final data):
       return data;
-    case ServiceFailure<List<ReviewStatusSnapshot>>():
-      return const [];
+    case ServiceFailure<List<ReviewStatusSnapshot>> failure:
+      throw ServiceFailureException(failure);
   }
 });
 
@@ -54,8 +54,8 @@ final rejectionDetailsProvider =
   switch (result) {
     case ServiceSuccess<List<RejectionDetail>>(:final data):
       return data;
-    case ServiceFailure<List<RejectionDetail>>():
-      return const [];
+    case ServiceFailure<List<RejectionDetail>> failure:
+      throw ServiceFailureException(failure);
   }
 });
 
@@ -68,7 +68,7 @@ final buildFailureLogsProvider =
   switch (result) {
     case ServiceSuccess<List<BuildFailureLog>>(:final data):
       return data;
-    case ServiceFailure<List<BuildFailureLog>>():
-      return const [];
+    case ServiceFailure<List<BuildFailureLog>> failure:
+      throw ServiceFailureException(failure);
   }
 });

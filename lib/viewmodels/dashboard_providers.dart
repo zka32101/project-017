@@ -15,8 +15,8 @@ final latestReviewStatusProvider =
   switch (result) {
     case ServiceSuccess<List<ReviewStatusSnapshot>>(:final data):
       return data.isEmpty ? null : data.first;
-    case ServiceFailure<List<ReviewStatusSnapshot>>():
-      return null;
+    case ServiceFailure<List<ReviewStatusSnapshot>> failure:
+      throw ServiceFailureException(failure);
   }
 });
 

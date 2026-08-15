@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/gen/app_localizations.dart';
 import '../../models/platform_type.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
@@ -42,11 +43,12 @@ class _AppRegistrationScreenState
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
     if (_bundleIdController.text.trim().isEmpty ||
         _displayNameController.text.trim().isEmpty ||
         _apiKeyController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('すべての項目を入力してください')),
+        SnackBar(content: Text(l10n.appRegistrationFillAllFields)),
       );
       return;
     }
@@ -67,29 +69,30 @@ class _AppRegistrationScreenState
       if (!mounted) return;
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('登録に失敗しました: $e')),
+        SnackBar(content: Text(l10n.appRegistrationFailed('$e'))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final steps = _platform == PlatformType.ios
-        ? const [
-            'App Store Connect にログイン',
-            'ユーザーとアクセス → 統合 → キーを生成',
-            '「App Manager」以上の最小権限スコープで発行',
-            '発行された Issuer ID / Key ID / .p8 の内容をコピー',
+        ? [
+            l10n.appRegistrationIosStep1,
+            l10n.appRegistrationIosStep2,
+            l10n.appRegistrationIosStep3,
+            l10n.appRegistrationIosStep4,
           ]
-        : const [
-            'Google Play Console にログイン',
-            'API アクセス → サービスアカウントを作成',
-            '最小権限ロール（表示専用など）で発行',
-            'サービスアカウントJSONキーの内容をコピー',
+        : [
+            l10n.appRegistrationAndroidStep1,
+            l10n.appRegistrationAndroidStep2,
+            l10n.appRegistrationAndroidStep3,
+            l10n.appRegistrationAndroidStep4,
           ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('アプリ登録')),
+      appBar: AppBar(title: Text(l10n.appRegistrationTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -106,8 +109,8 @@ class _AppRegistrationScreenState
               const SizedBox(height: 8),
               Text(
                 _progress >= 1
-                    ? 'あと1ステップで自動監視が始まります'
-                    : 'ここだけ頑張れば、あとは全部自動です',
+                    ? l10n.appRegistrationProgressAlmostDone
+                    : l10n.appRegistrationProgressStart,
                 style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 20),
@@ -127,8 +130,8 @@ class _AppRegistrationScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('APIキー発行手順（ユーザー作業）',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text(l10n.appRegistrationApiKeyStepsTitle,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 12),
                       for (var i = 0; i < steps.length; i++)
                         Padding(
@@ -155,7 +158,8 @@ class _AppRegistrationScreenState
               TextField(
                 controller: _displayNameController,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(labelText: 'アプリの表示名'),
+                decoration:
+                    InputDecoration(labelText: l10n.appRegistrationDisplayNameLabel),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -167,8 +171,8 @@ class _AppRegistrationScreenState
                 autocorrect: false,
                 decoration: InputDecoration(
                   labelText: _platform == PlatformType.ios
-                      ? 'Bundle ID'
-                      : 'Package Name',
+                      ? l10n.appRegistrationBundleIdLabel
+                      : l10n.appRegistrationPackageNameLabel,
                 ),
               ),
               const SizedBox(height: 12),
@@ -179,9 +183,8 @@ class _AppRegistrationScreenState
                 maxLines: 1,
                 keyboardType: TextInputType.visiblePassword,
                 autocorrect: false,
-                decoration: const InputDecoration(
-                  labelText: 'APIキー（端末内にのみ暗号化保存されます）',
-                ),
+                decoration:
+                    InputDecoration(labelText: l10n.appRegistrationApiKeyLabel),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -192,7 +195,7 @@ class _AppRegistrationScreenState
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('登録して初回スキャンを開始'),
+                    : Text(l10n.appRegistrationSubmit),
               ),
             ],
           ),

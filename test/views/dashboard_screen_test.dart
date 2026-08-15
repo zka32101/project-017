@@ -14,6 +14,7 @@ import 'package:ririkan/viewmodels/service_providers.dart';
 import 'package:ririkan/viewmodels/widget_sync_provider.dart';
 
 import '../test_utils/fakes.dart';
+import '../test_utils/test_app.dart';
 
 /// 取得が常に失敗するテスト用Service（app_detail_providers_test.dartと同じ形）。
 class _AlwaysFailingReviewStatusService implements ReviewStatusService {
@@ -24,20 +25,20 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
     ConnectedApp app,
   ) async {
     fetchCallCount++;
-    return const ServiceFailure('審査状態の取得に失敗しました');
+    return const ServiceFailure(ServiceFailureReason.reviewStatus);
   }
 
   @override
   Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
     ConnectedApp app,
   ) async =>
-      const ServiceFailure('リジェクト理由の取得に失敗しました');
+      const ServiceFailure(ServiceFailureReason.rejectionDetails);
 
   @override
   Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
     ConnectedApp app,
   ) async =>
-      const ServiceFailure('ビルド失敗ログの取得に失敗しました');
+      const ServiceFailure(ServiceFailureReason.buildFailureLogs);
 }
 
 void main() {
@@ -67,7 +68,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     await tester.pumpAndSettle();

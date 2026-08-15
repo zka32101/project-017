@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/gen/app_localizations.dart';
+import '../../l10n/service_failure_l10n.dart';
 import '../../models/connected_app.dart';
 import '../../models/revenue_summary.dart';
 import '../../theme/app_theme.dart';
@@ -42,6 +44,7 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final app = widget.app;
     return Scaffold(
       appBar: AppBar(
@@ -49,12 +52,12 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.ios_share_outlined),
-            tooltip: 'エクスポート',
+            tooltip: l10n.appDetailExportTooltip,
             onPressed: () => context.push('/export/${app.id}', extra: app),
           ),
           IconButton(
             icon: const Icon(Icons.checklist_outlined),
-            tooltip: '提出前チェックリスト',
+            tooltip: l10n.appDetailChecklistTooltip,
             onPressed: () =>
                 context.push('/checklist/${app.id}', extra: app),
           ),
@@ -62,12 +65,12 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          tabs: const [
-            Tab(text: '審査履歴'),
-            Tab(text: 'クラッシュ推移'),
-            Tab(text: '売上・DL数'),
-            Tab(text: 'リジェクト理由'),
-            Tab(text: 'ビルド失敗ログ'),
+          tabs: [
+            Tab(text: l10n.appDetailTabReviewHistory),
+            Tab(text: l10n.appDetailTabCrashTrend),
+            Tab(text: l10n.appDetailTabRevenue),
+            Tab(text: l10n.appDetailTabRejection),
+            Tab(text: l10n.appDetailTabBuildFailure),
           ],
         ),
       ),
@@ -91,10 +94,11 @@ class _ReviewHistoryTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final history = ref.watch(reviewHistoryProvider(app));
     return history.when(
       data: (items) => items.isEmpty
-          ? const _EmptyTab(message: '審査履歴はまだありません')
+          ? _EmptyTab(message: l10n.appDetailReviewHistoryEmpty)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: items.length,
@@ -111,7 +115,7 @@ class _ReviewHistoryTab extends ConsumerWidget {
                       ),
                     ),
                     title: Text('v${s.versionString}'),
-                    subtitle: Text(s.statusType.label),
+                    subtitle: Text(s.statusType.label(l10n)),
                     trailing: Text(
                       '${s.fetchedAt.month}/${s.fetchedAt.day}',
                       style: const TextStyle(color: AppTheme.textSecondary),
@@ -135,10 +139,11 @@ class _CrashTrendTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final crashes = ref.watch(crashSummariesProvider(app));
     return crashes.when(
       data: (items) => items.isEmpty
-          ? const _EmptyTab(message: 'クラッシュデータはまだありません')
+          ? _EmptyTab(message: l10n.appDetailCrashDataEmpty)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: items.length,
@@ -150,7 +155,8 @@ class _CrashTrendTab extends ConsumerWidget {
                     color: c.isSpiking() ? AppTheme.danger : AppTheme.primary,
                   ),
                   title: Text('${c.date.month}/${c.date.day}'),
-                  subtitle: Text('クラッシュフリー率 ${c.crashFreeRate.toStringAsFixed(1)}% ・ ${c.crashCount}件'),
+                  subtitle: Text(l10n.appDetailCrashFreeRate(
+                      c.crashFreeRate.toStringAsFixed(1), c.crashCount)),
                 );
               },
             ),
@@ -169,10 +175,11 @@ class _RevenueTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final revenue = ref.watch(revenueSummaryProvider(app));
     return revenue.when(
       data: (items) => items.isEmpty
-          ? const _EmptyTab(message: '売上データはまだありません')
+          ? _EmptyTab(message: l10n.appDetailRevenueEmpty)
           : _RevenueList(items: items),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => _ErrorTab(
@@ -189,6 +196,7 @@ class _RevenueList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final totalRevenue = items.fold<double>(0, (sum, r) => sum + r.revenue);
     final totalDownloads = items.fold<int>(0, (sum, r) => sum + r.downloadCount);
     final currency = items.first.currencyCode;
@@ -201,14 +209,14 @@ class _RevenueList extends StatelessWidget {
             children: [
               Expanded(
                 child: _SummaryStat(
-                  label: '直近${items.length}日 売上',
+                  label: l10n.appDetailRevenueSummaryLabel(items.length),
                   value: '$currency ${totalRevenue.toStringAsFixed(0)}',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _SummaryStat(
-                  label: 'DL数合計',
+                  label: l10n.appDetailDownloadsTotalLabel,
                   value: '$totalDownloads',
                 ),
               ),
@@ -225,7 +233,8 @@ class _RevenueList extends StatelessWidget {
                 dense: true,
                 title: Text('${r.date.month}/${r.date.day}'),
                 trailing: Text(
-                  '$currency ${r.revenue.toStringAsFixed(0)} ・ ${r.downloadCount}DL',
+                  l10n.appDetailRevenueRow(
+                      currency, r.revenue.toStringAsFixed(0), r.downloadCount),
                   style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                 ),
               );
@@ -266,10 +275,11 @@ class _RejectionTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final rejections = ref.watch(rejectionDetailsProvider(app));
     return rejections.when(
       data: (items) => items.isEmpty
-          ? const _EmptyTab(message: 'リジェクト履歴はありません')
+          ? _EmptyTab(message: l10n.appDetailRejectionEmpty)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: items.length,
@@ -277,7 +287,9 @@ class _RejectionTab extends ConsumerWidget {
                 final r = items[i];
                 return Card(
                   child: ListTile(
-                    title: Text(r.guidelineTitle ?? r.guidelineNumber ?? '理由不明'),
+                    title: Text(r.guidelineTitle ??
+                        r.guidelineNumber ??
+                        l10n.appDetailRejectionUnknownReason),
                     subtitle: Text(r.resolutionCenterMessage),
                   ),
                 );
@@ -298,10 +310,11 @@ class _BuildFailureTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final logs = ref.watch(buildFailureLogsProvider(app));
     return logs.when(
       data: (items) => items.isEmpty
-          ? const _EmptyTab(message: 'ビルド失敗ログはありません')
+          ? _EmptyTab(message: l10n.appDetailBuildFailureEmpty)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: items.length,
@@ -309,7 +322,7 @@ class _BuildFailureTab extends ConsumerWidget {
                 final b = items[i];
                 return Card(
                   child: ListTile(
-                    title: Text('Build ${b.buildNumber}'),
+                    title: Text(l10n.appDetailBuildNumber(b.buildNumber)),
                     subtitle: Text(b.failureReason),
                   ),
                 );
@@ -345,6 +358,7 @@ class _ErrorTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -353,11 +367,11 @@ class _ErrorTab extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, color: AppTheme.danger, size: 32),
             const SizedBox(height: 12),
-            Text('$error',
+            Text(localizedErrorMessage(l10n, error),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppTheme.textSecondary)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: onRetry, child: const Text('再試行')),
+            OutlinedButton(onPressed: onRetry, child: Text(l10n.commonRetry)),
           ],
         ),
       ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/gen/app_localizations.dart';
+import '../../l10n/service_failure_l10n.dart';
 import '../../models/connected_app.dart';
 import '../../models/platform_type.dart';
 import '../../theme/app_theme.dart';
@@ -15,6 +17,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final apps = ref.watch(sortedConnectedAppsProvider);
     final plan = ref.watch(userPlanProvider);
     // ホーム画面ウィジェット用データを常に最新化する（Should機能の土台、失敗しても画面表示は継続）。
@@ -28,7 +31,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('リリカン'),
+        title: Text(l10n.appTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -37,7 +40,7 @@ class DashboardScreen extends ConsumerWidget {
         ],
       ),
       body: apps.isEmpty
-          ? const _EmptyDashboard()
+          ? _EmptyDashboard(message: l10n.dashboardEmptyMessage)
           : ReorderableListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: apps.length,
@@ -59,14 +62,15 @@ class DashboardScreen extends ConsumerWidget {
           }
         },
         icon: const Icon(Icons.add),
-        label: const Text('アプリを追加'),
+        label: Text(l10n.dashboardAddApp),
       ),
     );
   }
 }
 
 class _EmptyDashboard extends StatelessWidget {
-  const _EmptyDashboard();
+  final String message;
+  const _EmptyDashboard({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -78,8 +82,7 @@ class _EmptyDashboard extends StatelessWidget {
           children: [
             const Icon(Icons.radar, size: 56, color: AppTheme.textSecondary),
             const SizedBox(height: 16),
-            const Text('まだ登録アプリがありません',
-                style: TextStyle(color: AppTheme.textSecondary)),
+            Text(message, style: const TextStyle(color: AppTheme.textSecondary)),
           ],
         ),
       ),
@@ -93,6 +96,7 @@ class _AppStatusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final statusAsync = ref.watch(latestReviewStatusProvider(app));
 
     return Card(
@@ -106,9 +110,12 @@ class _AppStatusCard extends ConsumerWidget {
         ),
         title: Text(app.displayName),
         subtitle: statusAsync.when(
-          data: (s) => Text(s == null ? '状態未取得' : '${s.versionString} ・ ${s.statusType.label}'),
-          loading: () => const Text('取得中…'),
-          error: (e, _) => Text('$e', maxLines: 1, overflow: TextOverflow.ellipsis),
+          data: (s) => Text(s == null
+              ? l10n.dashboardStatusUnknown
+              : '${s.versionString} ・ ${s.statusType.label(l10n)}'),
+          loading: () => Text(l10n.dashboardStatusLoading),
+          error: (e, _) => Text(localizedErrorMessage(l10n, e),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
         trailing: statusAsync.when(
           data: (s) => Container(
@@ -128,7 +135,7 @@ class _AppStatusCard extends ConsumerWidget {
           ),
           error: (_, _) => IconButton(
             icon: const Icon(Icons.refresh, size: 18, color: AppTheme.danger),
-            tooltip: '再試行',
+            tooltip: l10n.commonRetry,
             onPressed: () => ref.invalidate(latestReviewStatusProvider(app)),
           ),
         ),

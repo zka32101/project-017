@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/router/app_router.dart';
+
+import '../test_utils/test_app.dart';
 
 void main() {
   testWidgets('「通知を許可する」を選んでもアプリ登録画面へ遷移する', (tester) async {
     final router = buildAppRouter();
     await tester.pumpWidget(
-      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      ProviderScope(child: wrapWithLocalizedRouter(router)),
     );
     router.go('/notification-prompt');
     await tester.pumpAndSettle();
@@ -21,7 +22,7 @@ void main() {
   testWidgets('「あとで」を選んでもアプリ登録画面へ遷移する', (tester) async {
     final router = buildAppRouter();
     await tester.pumpWidget(
-      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      ProviderScope(child: wrapWithLocalizedRouter(router)),
     );
     router.go('/notification-prompt');
     await tester.pumpAndSettle();

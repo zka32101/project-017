@@ -1,3 +1,5 @@
+import '../l10n/gen/app_localizations.dart';
+
 /// 審査状態（App Store Connect / Play Console 共通表現）
 enum ReviewStatusType {
   waitingReview,
@@ -13,11 +15,13 @@ enum ReviewStatusType {
     );
   }
 
-  String get label => switch (this) {
-        ReviewStatusType.waitingReview => '審査待ち',
-        ReviewStatusType.inReview => '審査中',
-        ReviewStatusType.rejected => 'リジェクト',
-        ReviewStatusType.approved => '承認済み',
-        ReviewStatusType.live => '公開中',
+  /// モデル層はBuildContextを持たないため、AppLocalizationsを呼び出し元
+  /// （Widget側）から渡してもらう。
+  String label(AppLocalizations l10n) => switch (this) {
+        ReviewStatusType.waitingReview => l10n.reviewStatusWaitingReview,
+        ReviewStatusType.inReview => l10n.reviewStatusInReview,
+        ReviewStatusType.rejected => l10n.reviewStatusRejected,
+        ReviewStatusType.approved => l10n.reviewStatusApproved,
+        ReviewStatusType.live => l10n.reviewStatusLive,
       };
 }

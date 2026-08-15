@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../l10n/gen/app_localizations.dart';
 import '../../models/connected_app.dart';
 import '../../models/export_job.dart';
 import '../../theme/app_theme.dart';
@@ -32,17 +33,18 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final exportState = ref.watch(exportProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text('エクスポート・${widget.app.displayName}')),
+      appBar: AppBar(title: Text(l10n.exportTitle(widget.app.displayName))),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('審査履歴・リジェクト理由・ビルド失敗ログを1つのファイルにまとめます。',
-                style: TextStyle(color: AppTheme.textSecondary)),
+            Text(l10n.exportDescription,
+                style: const TextStyle(color: AppTheme.textSecondary)),
             const SizedBox(height: 20),
             SegmentedButton<ExportFormat>(
               segments: const [
@@ -66,7 +68,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('エクスポートを生成'),
+                  : Text(l10n.exportGenerate),
             ),
             const SizedBox(height: 20),
             if (exportState != null) _ExportResult(state: exportState),
@@ -83,14 +85,15 @@ class _ExportResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return state.when(
       loading: () => const SizedBox.shrink(),
-      error: (e, _) => Text('エクスポートに失敗しました: $e',
+      error: (e, _) => Text(l10n.exportFailedWithReason('$e'),
           style: const TextStyle(color: AppTheme.danger)),
       data: (job) {
         if (job.status == ExportJobStatus.failed) {
-          return const Text('エクスポートに失敗しました',
-              style: TextStyle(color: AppTheme.danger));
+          return Text(l10n.exportFailed,
+              style: const TextStyle(color: AppTheme.danger));
         }
         return Card(
           child: Padding(
@@ -102,18 +105,19 @@ class _ExportResult extends StatelessWidget {
                   children: [
                     const Icon(Icons.check_circle, color: AppTheme.primary),
                     const SizedBox(width: 8),
-                    Text('${job.format.name.toUpperCase()} を生成しました'),
+                    Text(l10n.exportGenerated(job.format.name.toUpperCase())),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '有効期限: ${job.expiresAt?.toLocal().toString().substring(0, 16) ?? '-'}まで',
+                  l10n.exportExpiresAt(
+                      job.expiresAt?.toLocal().toString().substring(0, 16) ?? '-'),
                   style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.share_outlined),
-                  label: const Text('共有'),
+                  label: Text(l10n.exportShare),
                   onPressed: job.fileUrl == null
                       ? null
                       : () => Share.shareXFiles([XFile(job.fileUrl!)]),

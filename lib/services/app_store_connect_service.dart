@@ -24,7 +24,7 @@ class AppStoreConnectService implements ReviewStatusService {
       final data = _mock.reviewStatusesFor(app.id, app.platform);
       return ServiceSuccess(data);
     } catch (e) {
-      return ServiceFailure('審査状態の取得に失敗しました', cause: e);
+      return ServiceFailure(ServiceFailureReason.reviewStatus, cause: e);
     }
   }
 
@@ -35,7 +35,7 @@ class AppStoreConnectService implements ReviewStatusService {
     try {
       return ServiceSuccess(_mock.rejectionsFor(app.id));
     } catch (e) {
-      return ServiceFailure('リジェクト理由の取得に失敗しました', cause: e);
+      return ServiceFailure(ServiceFailureReason.rejectionDetails, cause: e);
     }
   }
 
@@ -46,7 +46,7 @@ class AppStoreConnectService implements ReviewStatusService {
     try {
       return ServiceSuccess(_mock.buildFailuresFor(app.id, app.platform));
     } catch (e) {
-      return ServiceFailure('ビルド失敗ログの取得に失敗しました', cause: e);
+      return ServiceFailure(ServiceFailureReason.buildFailureLogs, cause: e);
     }
   }
 }

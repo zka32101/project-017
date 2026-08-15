@@ -9,10 +9,20 @@ class ServiceSuccess<T> extends ServiceResult<T> {
   const ServiceSuccess(this.data);
 }
 
+/// 失敗の種類。UI側（BuildContextを持つWidget）がこれを見てAppLocalizations経由の
+/// メッセージへ変換する。Service層は自然文の日本語メッセージを直接保持しない
+/// （Service/Notifier層にBuildContextが無く多言語化できないため）。
+enum ServiceFailureReason {
+  reviewStatus,
+  rejectionDetails,
+  buildFailureLogs,
+  revenueSummary,
+}
+
 class ServiceFailure<T> extends ServiceResult<T> {
-  final String message;
+  final ServiceFailureReason reason;
   final Object? cause;
-  const ServiceFailure(this.message, {this.cause});
+  const ServiceFailure(this.reason, {this.cause});
 }
 
 /// ServiceFailure を FutureProvider の例外として伝播させるためのラッパー。
@@ -23,8 +33,8 @@ class ServiceFailureException implements Exception {
   final ServiceFailure<dynamic> failure;
   const ServiceFailureException(this.failure);
 
-  String get message => failure.message;
+  ServiceFailureReason get reason => failure.reason;
 
   @override
-  String toString() => message;
+  String toString() => 'ServiceFailureException(${failure.reason})';
 }

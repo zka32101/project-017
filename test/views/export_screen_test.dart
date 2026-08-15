@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' hide DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/build_failure_log.dart';
@@ -15,6 +14,7 @@ import 'package:ririkan/viewmodels/service_providers.dart';
 import 'package:ririkan/viewmodels/widget_sync_provider.dart';
 
 import '../test_utils/fakes.dart';
+import '../test_utils/test_app.dart';
 
 /// generate()自体はdart:io/path_providerでファイルへ書き込むため、
 /// flutter test環境では実行できない。UI（成功表示・共有ボタン活性化等）だけを
@@ -69,7 +69,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     router.go('/export/${app.id}');

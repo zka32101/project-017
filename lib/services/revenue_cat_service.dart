@@ -29,7 +29,7 @@ class RevenueCatService {
       });
       return ServiceSuccess(data);
     } catch (e) {
-      return ServiceFailure('売上サマリーの取得に失敗しました', cause: e);
+      return ServiceFailure(ServiceFailureReason.revenueSummary, cause: e);
     }
   }
 }

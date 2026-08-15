@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/build_failure_log.dart';
@@ -14,25 +13,26 @@ import 'package:ririkan/viewmodels/service_providers.dart';
 import 'package:ririkan/viewmodels/widget_sync_provider.dart';
 
 import '../test_utils/fakes.dart';
+import '../test_utils/test_app.dart';
 
 class _AlwaysFailingReviewStatusService implements ReviewStatusService {
   @override
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
     ConnectedApp app,
   ) async =>
-      const ServiceFailure('審査状態の取得に失敗しました');
+      const ServiceFailure(ServiceFailureReason.reviewStatus);
 
   @override
   Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
     ConnectedApp app,
   ) async =>
-      const ServiceFailure('リジェクト理由の取得に失敗しました');
+      const ServiceFailure(ServiceFailureReason.rejectionDetails);
 
   @override
   Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
     ConnectedApp app,
   ) async =>
-      const ServiceFailure('ビルド失敗ログの取得に失敗しました');
+      const ServiceFailure(ServiceFailureReason.buildFailureLogs);
 }
 
 void main() {
@@ -60,7 +60,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     router.go('/app-detail/${app.id}');
@@ -86,7 +86,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     router.go('/app-detail/${app.id}');
@@ -114,7 +114,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     router.go('/app-detail/${app.id}');
@@ -144,7 +144,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     router.go('/app-detail/${app.id}');

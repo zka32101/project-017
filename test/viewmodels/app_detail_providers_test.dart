@@ -18,19 +18,19 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
     ConnectedApp app,
   ) async =>
-      const ServiceFailure('審査状態の取得に失敗しました');
+      const ServiceFailure(ServiceFailureReason.reviewStatus);
 
   @override
   Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
     ConnectedApp app,
   ) async =>
-      const ServiceFailure('リジェクト理由の取得に失敗しました');
+      const ServiceFailure(ServiceFailureReason.rejectionDetails);
 
   @override
   Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
     ConnectedApp app,
   ) async =>
-      const ServiceFailure('ビルド失敗ログの取得に失敗しました');
+      const ServiceFailure(ServiceFailureReason.buildFailureLogs);
 }
 
 void main() {
@@ -63,12 +63,12 @@ void main() {
     );
   });
 
-  test('伝播した例外のメッセージはServiceFailure.messageと一致する', () async {
+  test('伝播した例外のreasonはServiceFailure.reasonと一致する', () async {
     try {
       await container.read(reviewHistoryProvider(app).future);
       fail('例外が投げられるはず');
     } on ServiceFailureException catch (e) {
-      expect(e.message, '審査状態の取得に失敗しました');
+      expect(e.reason, ServiceFailureReason.reviewStatus);
     }
   });
 

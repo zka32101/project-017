@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +7,7 @@ import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
 import 'package:ririkan/viewmodels/service_providers.dart';
 
 import '../test_utils/fakes.dart';
+import '../test_utils/test_app.dart';
 
 /// ディープリンク（通知タップ等）で extra なしに /app-detail/:id 等へ
 /// 遷移した場合の解決ロジック（_AppDetailByIdResolver等）を検証する。
@@ -31,7 +31,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     router.go(location);

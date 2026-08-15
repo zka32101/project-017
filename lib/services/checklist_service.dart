@@ -1,3 +1,4 @@
+import '../l10n/gen/app_localizations.dart';
 import '../models/submission_checklist_item.dart';
 
 /// 提出前チェックリストの項目マスタ管理（Should機能、設計書 Step6.5で四半期メンテナンス想定）。
@@ -15,13 +16,17 @@ class ChecklistService {
         .toList();
   }
 
-  String labelFor(ChecklistItemKey key) => switch (key) {
-        ChecklistItemKey.privacyPolicyUrl => 'プライバシーポリシーURLの有効性',
-        ChecklistItemKey.ageRating => '年齢設定',
-        ChecklistItemKey.screenshotSize => 'スクリーンショット規定サイズ',
-        ChecklistItemKey.metadataRequiredFields => 'メタデータ必須項目',
-        ChecklistItemKey.contactInfo => '連絡先情報',
-        ChecklistItemKey.demoAccount => '審査用デモアカウント',
-        ChecklistItemKey.exportComplianceInfo => '暗号化・輸出コンプライアンス情報',
+  /// このServiceはBuildContextを持たないため、AppLocalizationsを呼び出し元
+  /// （Widget側）から渡してもらう。
+  String labelFor(AppLocalizations l10n, ChecklistItemKey key) => switch (key) {
+        ChecklistItemKey.privacyPolicyUrl => l10n.checklistItemPrivacyPolicyUrl,
+        ChecklistItemKey.ageRating => l10n.checklistItemAgeRating,
+        ChecklistItemKey.screenshotSize => l10n.checklistItemScreenshotSize,
+        ChecklistItemKey.metadataRequiredFields =>
+          l10n.checklistItemMetadataRequiredFields,
+        ChecklistItemKey.contactInfo => l10n.checklistItemContactInfo,
+        ChecklistItemKey.demoAccount => l10n.checklistItemDemoAccount,
+        ChecklistItemKey.exportComplianceInfo =>
+          l10n.checklistItemExportComplianceInfo,
       };
 }

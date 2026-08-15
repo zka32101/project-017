@@ -12,6 +12,7 @@ import '../models/connected_app.dart';
 import '../models/export_job.dart';
 import '../models/rejection_detail.dart';
 import '../models/review_status_snapshot.dart';
+import '../models/review_status_type.dart';
 
 /// レポートエクスポート（Should機能、設計書 Step4）。
 /// 本番設計はCloud Functionsトリガー→Cloud Storage署名付きURLだが、
@@ -73,6 +74,18 @@ class ExportService {
     }
   }
 
+  /// エクスポートされるCSV/PDFのレポート本文は現状すべて日本語固定（多言語対応スコープ外、
+  /// UI画面側の文言のみlib/l10n/*.arb経由でAppLocalizations化している）。
+  /// ReviewStatusType.label はUI側でAppLocalizationsを渡す設計に変更したため
+  /// （export_service.dartはBuildContextを持たない）、レポート専用に日本語固定のラベルを別途持つ。
+  static String _reportLabelFor(ReviewStatusType status) => switch (status) {
+        ReviewStatusType.waitingReview => '審査待ち',
+        ReviewStatusType.inReview => '審査中',
+        ReviewStatusType.rejected => 'リジェクト',
+        ReviewStatusType.approved => '承認済み',
+        ReviewStatusType.live => '公開中',
+      };
+
   /// ファイル名に使うと壊れる文字（パス区切り、制御文字等）をアンダースコアに置換する。
   /// app.displayName はアプリ登録画面の自由入力のため、'/' や NUL 文字等を含み得る
   /// （例: 'Petit/Works App' → 'ririkan_export_Petit/Works App_xxx.pdf' という
@@ -96,7 +109,7 @@ class ExportService {
       ['審査履歴'],
       ['バージョン', '状態', '取得日時'],
       for (final s in reviewHistory)
-        [s.versionString, s.statusType.label, s.fetchedAt.toIso8601String()],
+        [s.versionString, _reportLabelFor(s.statusType), s.fetchedAt.toIso8601String()],
       [],
       ['リジェクト理由'],
       ['ガイドライン番号', 'タイトル', 'メッセージ', 'リジェクト日時'],
@@ -161,7 +174,7 @@ class ExportService {
             data: reviewHistory
                 .map((s) => [
                       s.versionString,
-                      s.statusType.label,
+                      _reportLabelFor(s.statusType),
                       s.fetchedAt.toIso8601String(),
                     ])
                 .toList(),

@@ -13,13 +13,13 @@
   "dashboardStatusLoading": "取得中…",
 
   "appRegistrationTitle": "アプリ登録",
-  "appRegistrationFillAllFields": "すべての項目を入力してください",
+  "appRegistrationApiKeyRequired": "APIキーを入力してください",
+  "appRegistrationNoAppsFound": "このAPIキーに紐づくアプリが見つかりませんでした",
   "appRegistrationFailed": "登録に失敗しました: {error}",
   "@appRegistrationFailed": {
     "placeholders": {"error": {"type": "String"}}
   },
-  "appRegistrationProgressAlmostDone": "あと1ステップで自動監視が始まります",
-  "appRegistrationProgressStart": "ここだけ頑張れば、あとは全部自動です",
+  "appRegistrationBulkFetchDescription": "APIキーを入力すると、そのアカウントに紐づくアプリをまとめて取得して登録します（1件ずつの登録は不要です）。",
   "appRegistrationIosStep1": "App Store Connect にログイン",
   "appRegistrationIosStep2": "ユーザーとアクセス → 統合 → キーを生成",
   "appRegistrationIosStep3": "「App Manager」以上の最小権限スコープで発行",
@@ -29,11 +29,8 @@
   "appRegistrationAndroidStep3": "最小権限ロール（表示専用など）で発行",
   "appRegistrationAndroidStep4": "サービスアカウントJSONキーの内容をコピー",
   "appRegistrationApiKeyStepsTitle": "APIキー発行手順（ユーザー作業）",
-  "appRegistrationDisplayNameLabel": "アプリの表示名",
-  "appRegistrationBundleIdLabel": "Bundle ID",
-  "appRegistrationPackageNameLabel": "Package Name",
   "appRegistrationApiKeyLabel": "APIキー（端末内にのみ暗号化保存されます）",
-  "appRegistrationSubmit": "登録して初回スキャンを開始",
+  "appRegistrationSubmit": "アプリをまとめて取得して登録",
 
   "appDetailExportTooltip": "エクスポート",
   "appDetailChecklistTooltip": "提出前チェックリスト",
@@ -77,6 +74,7 @@
   "errorRejectionDetailsFetchFailed": "リジェクト理由の取得に失敗しました",
   "errorBuildFailureLogsFetchFailed": "ビルド失敗ログの取得に失敗しました",
   "errorRevenueFetchFailed": "売上サマリーの取得に失敗しました",
+  "errorAppDiscoveryFailed": "アプリ一覧の取得に失敗しました",
   "errorGeneric": "エラーが発生しました",
 
   "checklistTitle": "提出前チェックリスト・{appName}",

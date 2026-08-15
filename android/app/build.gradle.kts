@@ -26,6 +26,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // AGPの暗黙のdebug設定（~/.android/debug.keystore）は環境ごとに
+            // 自動生成され、CIのように毎回まっさらな環境だとビルドのたびに
+            // 別の鍵になってしまう。その結果、前回ビルドのAPKが入った端末に
+            // 新しいビルドを重ねてインストールしようとすると「署名が一致しない
+            // アップデート」としてインストールが拒否される。
+            // リポジトリにコミットしたdebug.keystoreを明示的に指定し、
+            // すべてのビルド環境で同じdebug鍵を使うようにする。
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

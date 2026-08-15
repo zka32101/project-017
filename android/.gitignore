@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# 例外: debug用の署名鍵は固定のためあえてコミットする
+# (理由は app/build.gradle.kts の signingConfigs.debug 定義を参照)。
+!app/debug.keystore

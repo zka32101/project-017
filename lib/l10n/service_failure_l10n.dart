@@ -15,6 +15,7 @@ String localizedErrorMessage(AppLocalizations l10n, Object error) {
       ServiceFailureReason.buildFailureLogs =>
         l10n.errorBuildFailureLogsFetchFailed,
       ServiceFailureReason.revenueSummary => l10n.errorRevenueFetchFailed,
+      ServiceFailureReason.appDiscovery => l10n.errorAppDiscoveryFailed,
     };
   }
   return l10n.errorGeneric;

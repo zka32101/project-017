@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/connected_app.dart';
+import '../models/discoverable_app.dart';
 import '../models/platform_type.dart';
 import '../models/user_plan.dart';
 import '../services/local_store_service.dart';
@@ -42,6 +43,35 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
     state = [...state, app];
     await _persist();
     return app;
+  }
+
+  /// アプリ単位の手動登録ではなく、APIキー1つに紐づくアカウント配下のアプリを
+  /// discoverApps() でまとめて取得した結果を一括登録する。既存のregisterApp()を
+  /// 1件ずつ呼ぶだけの薄いラッパーのため、SecureStorageへは登録するアプリの数だけ
+  /// 同じAPIキーのコピーが保存される（ConnectedApp 1件につき apiKeyRef 1件、という
+  /// 既存のデータモデルをそのまま踏襲する）。
+  ///
+  /// 途中の1件が失敗しても、既に登録済みの分はロールバックしない
+  /// （「N件中M件登録できました」を後続の呼び出し側が判断できるよう、
+  /// 例外はそのまま呼び出し元へ伝播させる）。
+  Future<List<ConnectedApp>> registerAppsBulk({
+    required String userId,
+    required PlatformType platform,
+    required String apiKey,
+    required List<DiscoverableApp> discovered,
+  }) async {
+    final registered = <ConnectedApp>[];
+    for (final d in discovered) {
+      final app = await registerApp(
+        userId: userId,
+        platform: platform,
+        bundleIdOrPackageName: d.bundleIdOrPackageName,
+        displayName: d.displayName,
+        apiKey: apiKey,
+      );
+      registered.add(app);
+    }
+    return registered;
   }
 
   /// oldIndex/newIndex は ReorderableListView の onReorderItem が既に
@@ -86,9 +116,14 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
         );
   }
 
-  /// 3本目登録＝ペイウォール到達（無料プランのみ判定、KPI: app_registered_3rd）
-  bool wouldHitPaywall(UserPlan plan) =>
-      plan == UserPlan.free && state.length >= UserPlan.freeAppLimit;
+  /// 課金は一時的に無効化中（ユーザー指示）。UserPlan/PaywallScreen/`/paywall`
+  /// ルート自体は温存し、このゲートだけを常にfalseにして無効化している。
+  /// また、まとめて取得（registerAppsBulk）は1回の操作で無料プラン上限を
+  /// 一気に超えうるため、「1件登録するたびにゲートを見る」という従来の設計は
+  /// アプリ単位の登録を前提にしたものであり、一括登録フローとも整合しない。
+  /// 再度有効化する場合は元の判定
+  /// (`plan == UserPlan.free && state.length >= UserPlan.freeAppLimit`)に戻すこと。
+  bool wouldHitPaywall(UserPlan plan) => false;
 
   /// デモアプリの固定ID。乱数（uuid）にすると、状態がインメモリのみで
   /// 永続化されていない現状、起動のたびに新しいIDでデモアプリが再登録され、

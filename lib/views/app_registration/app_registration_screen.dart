@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/gen/app_localizations.dart';
+import '../../models/discoverable_app.dart';
 import '../../models/platform_type.dart';
+import '../../services/service_result.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
+import '../../viewmodels/service_providers.dart';
 
-/// アプリ登録: APIキー発行手順ガイド付き（設計書 Step2 唯一の重い手動作業）。
-/// 進捗バー「あと1ステップ（APIキー貼り付け）で自動監視が始まります」を表示し、
-/// 「ここから先は何もしなくていい」という体験の切り替わりを可視化する（致命的リスク①対策）。
+/// アプリ登録: アプリ単位の手動登録ではなく、APIキー1つに紐づくアカウント配下の
+/// アプリをまとめて取得して一括登録する（仕様変更: 1件ずつのBundle ID/表示名の
+/// 手入力は不要）。APIキー発行手順ガイド付き（設計書 Step2 唯一の重い手動作業）。
 class AppRegistrationScreen extends ConsumerStatefulWidget {
   const AppRegistrationScreen({super.key});
 
@@ -21,51 +24,55 @@ class AppRegistrationScreen extends ConsumerStatefulWidget {
 class _AppRegistrationScreenState
     extends ConsumerState<AppRegistrationScreen> {
   PlatformType _platform = PlatformType.ios;
-  final _bundleIdController = TextEditingController();
-  final _displayNameController = TextEditingController();
   final _apiKeyController = TextEditingController();
   bool _submitting = false;
 
   @override
   void dispose() {
-    _bundleIdController.dispose();
-    _displayNameController.dispose();
     _apiKeyController.dispose();
     super.dispose();
   }
 
-  double get _progress {
-    var steps = 0.0;
-    if (_bundleIdController.text.trim().isNotEmpty) steps += 1;
-    if (_displayNameController.text.trim().isNotEmpty) steps += 1;
-    if (_apiKeyController.text.trim().isNotEmpty) steps += 1;
-    return steps / 3;
-  }
-
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
-    if (_bundleIdController.text.trim().isEmpty ||
-        _displayNameController.text.trim().isEmpty ||
-        _apiKeyController.text.trim().isEmpty) {
+    final apiKey = _apiKeyController.text.trim();
+    if (apiKey.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.appRegistrationFillAllFields)),
+        SnackBar(content: Text(l10n.appRegistrationApiKeyRequired)),
       );
       return;
     }
     setState(() => _submitting = true);
     try {
-      await ref.read(connectedAppsProvider.notifier).registerApp(
+      final service = ref.read(reviewStatusServiceProvider(_platform));
+      final result = await service.discoverApps(apiKey);
+      final discovered = switch (result) {
+        ServiceSuccess<List<DiscoverableApp>>(:final data) => data,
+        ServiceFailure<List<DiscoverableApp>> failure =>
+          throw ServiceFailureException(failure),
+      };
+
+      if (discovered.isEmpty) {
+        if (!mounted) return;
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.appRegistrationNoAppsFound)),
+        );
+        return;
+      }
+
+      await ref.read(connectedAppsProvider.notifier).registerAppsBulk(
             userId: 'local_user',
             platform: _platform,
-            bundleIdOrPackageName: _bundleIdController.text.trim(),
-            displayName: _displayNameController.text.trim(),
-            apiKey: _apiKeyController.text.trim(),
+            apiKey: apiKey,
+            discovered: discovered,
           );
       if (!mounted) return;
       context.go('/initial-scan');
     } catch (e) {
-      // APIキーの保存（Secure Storage）失敗などで登録処理が例外を投げても、
-      // ボタンがローディング状態のまま固まったり画面が無反応になったりしないようにする。
+      // APIキーの保存（Secure Storage）失敗やアプリ一覧取得の失敗などで登録処理が
+      // 例外を投げても、ボタンがローディング状態のまま固まったり画面が無反応に
+      // なったりしないようにする。
       if (!mounted) return;
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -99,18 +106,8 @@ class _AppRegistrationScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LinearProgressIndicator(
-                value: _progress,
-                backgroundColor: AppTheme.surfaceVariant,
-                color: AppTheme.primary,
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(3),
-              ),
-              const SizedBox(height: 8),
               Text(
-                _progress >= 1
-                    ? l10n.appRegistrationProgressAlmostDone
-                    : l10n.appRegistrationProgressStart,
+                l10n.appRegistrationBulkFetchDescription,
                 style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 20),
@@ -156,29 +153,7 @@ class _AppRegistrationScreenState
               ),
               const SizedBox(height: 20),
               TextField(
-                controller: _displayNameController,
-                onChanged: (_) => setState(() {}),
-                decoration:
-                    InputDecoration(labelText: l10n.appRegistrationDisplayNameLabel),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _bundleIdController,
-                onChanged: (_) => setState(() {}),
-                // Bundle ID/Package Nameは英数字・ドットのみ。日本語IMEでのローマ字変換を防ぐため
-                // 英数字専用キーボードを強制する（visiblePasswordは記号入力もしやすく実務上定番）。
-                keyboardType: TextInputType.visiblePassword,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: _platform == PlatformType.ios
-                      ? l10n.appRegistrationBundleIdLabel
-                      : l10n.appRegistrationPackageNameLabel,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
                 controller: _apiKeyController,
-                onChanged: (_) => setState(() {}),
                 obscureText: true,
                 maxLines: 1,
                 keyboardType: TextInputType.visiblePassword,

@@ -86,3 +86,11 @@ local.properties
 private_key.pem
 serviceAccountKey.json
 .firebase/
+
+# 例外: debug用の署名鍵はあえてコミットする。CIランナーは実行のたびに
+# まっさらな環境なので、この除外ルールのままだと毎回ランダムなdebug鍵が
+# 自動生成され、ビルドのたびに署名が変わってしまう
+# （= 端末側で「署名が一致しないアップデート」としてインストールが弾かれる）。
+# debug鍵はPlay Store配布とは無関係でパスワードも公開情報（android/android）
+# のため秘匿性は不要 — 固定して全ビルドで同じ鍵を使う。
+!/android/app/debug.keystore

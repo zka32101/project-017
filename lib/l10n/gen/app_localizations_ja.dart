@@ -33,7 +33,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appRegistrationTitle => 'アプリ登録';
 
   @override
-  String get appRegistrationFillAllFields => 'すべての項目を入力してください';
+  String get appRegistrationApiKeyRequired => 'APIキーを入力してください';
+
+  @override
+  String get appRegistrationNoAppsFound => 'このAPIキーに紐づくアプリが見つかりませんでした';
 
   @override
   String appRegistrationFailed(String error) {
@@ -41,10 +44,8 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get appRegistrationProgressAlmostDone => 'あと1ステップで自動監視が始まります';
-
-  @override
-  String get appRegistrationProgressStart => 'ここだけ頑張れば、あとは全部自動です';
+  String get appRegistrationBulkFetchDescription =>
+      'APIキーを入力すると、そのアカウントに紐づくアプリをまとめて取得して登録します（1件ずつの登録は不要です）。';
 
   @override
   String get appRegistrationIosStep1 => 'App Store Connect にログイン';
@@ -75,19 +76,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appRegistrationApiKeyStepsTitle => 'APIキー発行手順（ユーザー作業）';
 
   @override
-  String get appRegistrationDisplayNameLabel => 'アプリの表示名';
-
-  @override
-  String get appRegistrationBundleIdLabel => 'Bundle ID';
-
-  @override
-  String get appRegistrationPackageNameLabel => 'Package Name';
-
-  @override
   String get appRegistrationApiKeyLabel => 'APIキー（端末内にのみ暗号化保存されます）';
 
   @override
-  String get appRegistrationSubmit => '登録して初回スキャンを開始';
+  String get appRegistrationSubmit => 'アプリをまとめて取得して登録';
 
   @override
   String get appDetailExportTooltip => 'エクスポート';
@@ -162,6 +154,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get errorRevenueFetchFailed => '売上サマリーの取得に失敗しました';
+
+  @override
+  String get errorAppDiscoveryFailed => 'アプリ一覧の取得に失敗しました';
 
   @override
   String get errorGeneric => 'エラーが発生しました';

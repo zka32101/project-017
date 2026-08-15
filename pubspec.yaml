@@ -70,6 +70,10 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # アプリアイコン（assets/icon/）からiOS/Androidの各解像度アイコンを生成する。
+  # `dart run flutter_launcher_icons` で再生成できる（下の flutter_launcher_icons: 設定参照）。
+  flutter_launcher_icons: ^0.14.4
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -88,6 +92,17 @@ flutter:
   # 出典: https://github.com/google/fonts/tree/main/ofl/notosansjp
   assets:
     - assets/fonts/NotoSansJP-Variable.ttf
+
+# アプリアイコン生成設定（flutter_launcher_icons）。
+# 変更したら `dart run flutter_launcher_icons` を再実行してiOS/Androidの
+# 各解像度アイコンを再生成すること。
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#0A2C49"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

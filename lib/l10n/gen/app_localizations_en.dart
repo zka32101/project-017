@@ -33,7 +33,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appRegistrationTitle => 'Register App';
 
   @override
-  String get appRegistrationFillAllFields => 'Please fill in all fields';
+  String get appRegistrationApiKeyRequired => 'Please enter an API key';
+
+  @override
+  String get appRegistrationNoAppsFound =>
+      'No apps were found for this API key';
 
   @override
   String appRegistrationFailed(String error) {
@@ -41,12 +45,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get appRegistrationProgressAlmostDone =>
-      'One more step and automatic monitoring begins';
-
-  @override
-  String get appRegistrationProgressStart =>
-      'Just get through this part — everything after is automatic';
+  String get appRegistrationBulkFetchDescription =>
+      'Enter an API key and every app under that account is fetched and registered at once (no need to register apps one by one).';
 
   @override
   String get appRegistrationIosStep1 => 'Sign in to App Store Connect';
@@ -82,20 +82,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appRegistrationApiKeyStepsTitle => 'API Key Setup Steps (Manual)';
 
   @override
-  String get appRegistrationDisplayNameLabel => 'App Display Name';
-
-  @override
-  String get appRegistrationBundleIdLabel => 'Bundle ID';
-
-  @override
-  String get appRegistrationPackageNameLabel => 'Package Name';
-
-  @override
   String get appRegistrationApiKeyLabel =>
       'API Key (stored encrypted on this device only)';
 
   @override
-  String get appRegistrationSubmit => 'Register and Start Initial Scan';
+  String get appRegistrationSubmit => 'Fetch & Register Apps';
 
   @override
   String get appDetailExportTooltip => 'Export';
@@ -172,6 +163,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorRevenueFetchFailed => 'Failed to fetch revenue summary';
+
+  @override
+  String get errorAppDiscoveryFailed => 'Failed to fetch the app list';
 
   @override
   String get errorGeneric => 'An error occurred';

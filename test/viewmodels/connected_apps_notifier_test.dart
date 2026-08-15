@@ -20,6 +20,9 @@ class _FakeLocalStoreService extends LocalStoreService {
 
   @override
   Future<void> save(LocalState state) async {}
+
+  @override
+  Future<void> deleteChecklist(String connectedAppId) async {}
 }
 
 /// load()の戻り値を差し込め、save()の呼び出しを記録できるフェイク。
@@ -38,6 +41,9 @@ class _SpyLocalStoreService extends LocalStoreService {
     _stored = state;
     saveCallCount++;
   }
+
+  @override
+  Future<void> deleteChecklist(String connectedAppId) async {}
 }
 
 /// 実機のKeychain/EncryptedSharedPreferencesに依存しないインメモリ版。

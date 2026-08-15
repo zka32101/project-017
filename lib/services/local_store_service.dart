@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/connected_app.dart';
+import '../models/submission_checklist_item.dart';
 import '../models/user_plan.dart';
 
 /// 登録アプリ一覧・プランのローカル永続化（旧来はインメモリのみで、
@@ -56,6 +57,78 @@ class LocalStoreService {
       // 永続化はベストエフォート。書き込み失敗はアプリの操作自体を妨げない
       // （registerApp/removeApp 等は Secure Storage への保存/削除さえ成功すれば
       // 完了として扱い、ローカルJSONへの反映失敗で例外を投げたりはしない）。
+    }
+  }
+
+  /// 提出前チェックリストの進捗は connectedAppId ごとに独立した別ファイルに保存する
+  /// （apps/planの共有ファイルに混ぜると、ConnectedAppsNotifierとChecklistNotifierが
+  /// それぞれ非同期に保存する際、お互いの最新データを読み直さずに上書きし合う
+  /// レースコンディションを持ち込むことになるため、あえて分離している）。
+  ///
+  /// connectedAppId はアプリ内部で uuid.v4() または固定のデモID文字列としてしか
+  /// 生成されず、ファイル名として不正な文字を含み得るユーザー自由入力ではない
+  /// （export_service.dart の displayName とは異なる）。
+  Future<File?> _checklistFile(String connectedAppId) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      return File('${dir.path}/ririkan_checklist_$connectedAppId.json');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<SubmissionChecklistItem>?> loadChecklist(
+    String connectedAppId,
+  ) async {
+    try {
+      final file = await _checklistFile(connectedAppId);
+      if (file == null || !await file.exists()) return null;
+      final raw = await file.readAsString();
+      if (raw.trim().isEmpty) return null;
+      final rawList = jsonDecode(raw);
+      if (rawList is! List) return null;
+
+      final items = <SubmissionChecklistItem>[];
+      for (final entry in rawList) {
+        // apps/planと同様、1件のフォーマット崩れで復元処理全体を失敗させない。
+        try {
+          items.add(
+            SubmissionChecklistItem.fromJson(entry as Map<String, dynamic>),
+          );
+        } catch (_) {
+          continue;
+        }
+      }
+      return items;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveChecklist(
+    String connectedAppId,
+    List<SubmissionChecklistItem> items,
+  ) async {
+    try {
+      final file = await _checklistFile(connectedAppId);
+      if (file == null) return;
+      await file.writeAsString(
+        jsonEncode(items.map((i) => i.toJson()).toList()),
+      );
+    } catch (_) {
+      // ベストエフォート。setResult()自体は失敗させない。
+    }
+  }
+
+  /// アプリ削除時に呼ばれ、そのアプリのチェックリストファイルを消す
+  /// （呼ばなくても実害は無いが、放置すると使われないファイルが残り続ける）。
+  Future<void> deleteChecklist(String connectedAppId) async {
+    try {
+      final file = await _checklistFile(connectedAppId);
+      if (file == null || !await file.exists()) return;
+      await file.delete();
+    } catch (_) {
+      // ベストエフォート。removeApp()自体は失敗させない。
     }
   }
 }

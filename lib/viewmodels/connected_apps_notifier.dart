@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/connected_app.dart';
 import '../models/platform_type.dart';
 import '../models/user_plan.dart';
+import '../services/local_store_service.dart';
 import 'service_providers.dart';
 
 /// 登録済みアプリ一覧の状態管理（Must#5: アプリ登録・並び替え）。
@@ -39,23 +40,47 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
       sortOrder: state.length,
     );
     state = [...state, app];
+    await _persist();
     return app;
   }
 
   /// oldIndex/newIndex は ReorderableListView の onReorderItem が既に
   /// 「削除後基準」に調整済みの値を渡してくる（onReorder の手動調整は不要、Flutter SDK仕様）。
-  void reorder(int oldIndex, int newIndex) {
+  Future<void> reorder(int oldIndex, int newIndex) async {
     final list = [...state];
     final item = list.removeAt(oldIndex);
     list.insert(newIndex, item);
     state = [
       for (var i = 0; i < list.length; i++) list[i].copyWith(sortOrder: i),
     ];
+    await _persist();
   }
 
   Future<void> removeApp(String id) async {
     await ref.read(secureStorageServiceProvider).deleteApiKey(id);
     state = state.where((a) => a.id != id).toList();
+    await _persist();
+  }
+
+  /// 永続化データからの復元用。APIキー本体は前回セッションで既にSecure
+  /// Storageへ保存済みのため、ここではメタデータ一覧をstateへ反映するだけでよい
+  /// （Secure Storageへの再書き込みは行わない）。
+  void restore(List<ConnectedApp> apps) {
+    state = apps;
+  }
+
+  /// プラン変更（ペイウォールでのアップグレード等）をuserPlanProviderへ反映しつつ、
+  /// 永続化もあわせて行う。paywall_screen.dart等はこのメソッド経由で変更すること
+  /// （userPlanProvider.notifier.state を直接書き換えると永続化されない）。
+  Future<void> setPlan(UserPlan plan) async {
+    ref.read(userPlanProvider.notifier).state = plan;
+    await _persist();
+  }
+
+  Future<void> _persist() async {
+    await ref.read(localStoreServiceProvider).save(
+          LocalState(apps: state, plan: ref.read(userPlanProvider)),
+        );
   }
 
   /// 3本目登録＝ペイウォール到達（無料プランのみ判定、KPI: app_registered_3rd）
@@ -131,5 +156,37 @@ final connectedAppsProvider =
   ConnectedAppsNotifier.new,
 );
 
-/// 現在のユーザープラン（MVPはローカル保持のみ、Firebase Auth/Firestore連携は次フェーズ）
+/// 現在のユーザープラン（Firebase Auth/Firestore連携は次フェーズ、それまではローカル永続化のみ）。
+/// 直接 state を書き換えず ConnectedAppsNotifier.setPlan() 経由で変更すること（永続化のため）。
 final userPlanProvider = StateProvider<UserPlan>((ref) => UserPlan.free);
+
+/// アプリ起動時に一度だけ実行する初期化処理。
+/// 永続化データ（登録アプリ一覧・プラン）があればそれを復元し、無ければ
+/// （初回起動、または永続化非対応環境）従来通りデモアプリを自動登録する。
+///
+/// ConnectedAppsNotifier.build() 内の暗黙的な副作用として自動発火させるのでは
+/// なく、あえて独立したFutureProviderとして明示的に一度だけ待つ設計にしている。
+/// build()内で自動発火する設計だと、ProviderContainerを作って即座に
+/// registerApp/removeAppを呼ぶ既存の単体テスト群と非同期のタイミングが競合し、
+/// テストが登録したはずのアプリが復元処理に上書きされる/されない、といった
+/// 非決定的な失敗を招きかねない。DashboardScreen側で明示的にwatchすることで、
+/// 通常の単体テスト（connectedAppsProviderのnotifierを直接操作するもの）は
+/// このプロバイダに一切触れず、影響を受けない。
+final appBootstrapProvider = FutureProvider<void>((ref) async {
+  final store = ref.read(localStoreServiceProvider);
+  final saved = await store.load();
+  final notifier = ref.read(connectedAppsProvider.notifier);
+
+  if (saved != null) {
+    ref.read(userPlanProvider.notifier).state = saved.plan;
+    if (saved.apps.isNotEmpty) {
+      notifier.restore(saved.apps);
+      return;
+    }
+  }
+
+  // 保存データが無い（初回起動・永続化非対応環境）か、保存された一覧が空なら
+  // 従来通りデモアプリを自動登録する。デモアプリのIDは固定のため、繰り返し
+  // 呼ばれてもSecure Storageに新規エントリが増え続けることはない。
+  await notifier.initializeDemoAppsIfNeeded();
+});

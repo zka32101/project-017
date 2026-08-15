@@ -16,6 +16,8 @@ class ChecklistScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 永続化された進捗を一度だけ復元する（無ければ何もしない＝初期状態のまま）。
+    ref.watch(checklistBootstrapProvider(app.id));
     final items = ref.watch(checklistProvider(app.id));
     final notifier = ref.read(checklistProvider(app.id).notifier);
     final checklistService = ref.read(checklistServiceProvider);

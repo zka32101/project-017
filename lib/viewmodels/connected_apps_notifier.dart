@@ -60,6 +60,9 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
     await ref.read(secureStorageServiceProvider).deleteApiKey(id);
     state = state.where((a) => a.id != id).toList();
     await _persist();
+    // チェックリストの進捗ファイルも一緒に片付ける（無くても実害は無いが、
+    // 削除済みアプリの使われないJSONファイルが残り続けるのを防ぐ）。
+    await ref.read(localStoreServiceProvider).deleteChecklist(id);
   }
 
   /// 永続化データからの復元用。APIキー本体は前回セッションで既にSecure

@@ -1,5 +1,7 @@
 import '../models/build_failure_log.dart';
 import '../models/connected_app.dart';
+import '../models/discoverable_app.dart';
+import '../models/platform_type.dart';
 import '../models/rejection_detail.dart';
 import '../models/review_status_snapshot.dart';
 import 'mock_data_service.dart';
@@ -47,6 +49,17 @@ class AppStoreConnectService implements ReviewStatusService {
       return ServiceSuccess(_mock.buildFailuresFor(app.id, app.platform));
     } catch (e) {
       return ServiceFailure(ServiceFailureReason.buildFailureLogs, cause: e);
+    }
+  }
+
+  @override
+  Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
+    String apiKey,
+  ) async {
+    try {
+      return ServiceSuccess(_mock.discoverableAppsFor(PlatformType.ios));
+    } catch (e) {
+      return ServiceFailure(ServiceFailureReason.appDiscovery, cause: e);
     }
   }
 }

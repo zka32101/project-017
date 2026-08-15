@@ -9,6 +9,8 @@ import 'package:ririkan/viewmodels/widget_sync_provider.dart';
 import '../test_utils/fakes.dart';
 import '../test_utils/test_app.dart';
 
+/// アプリ登録画面: アプリ単位の手動登録ではなく、APIキー1つに紐づくアカウント
+/// 配下のアプリをまとめて取得して一括登録する仕様(仕様変更)。
 void main() {
   late ProviderContainer container;
 
@@ -33,56 +35,60 @@ void main() {
       ),
     );
     // initialLocation は /dashboard のため、遷移前にデモアプリ自動登録
-    // （appBootstrapProvider）の非同期処理が裏で走り出す。pumpAndSettle で
+    // (appBootstrapProvider)の非同期処理が裏で走り出す。pumpAndSettle で
     // その完了まで待ってから /app-registration へ遷移する。
     router.go('/app-registration');
     await tester.pumpAndSettle();
   }
 
   Future<void> tapSubmit(WidgetTester tester) async {
-    final submitButton = find.text('登録して初回スキャンを開始');
+    final submitButton = find.text('アプリをまとめて取得して登録');
     // 画面は SingleChildScrollView 内にあり、デフォルトのテスト画面サイズでは
     // ボタンが画面外にはみ出すため、タップ前にスクロールして可視化する。
     await tester.ensureVisible(submitButton);
     await tester.tap(submitButton);
   }
 
-  testWidgets('未入力のまま送信すると「すべての項目を入力してください」が表示され、登録されない',
+  testWidgets('APIキー未入力のまま送信すると「APIキーを入力してください」が表示され、登録されない',
       (tester) async {
     await pumpRegistrationScreen(tester);
     final countBefore = container.read(connectedAppsProvider).length;
 
     await tapSubmit(tester);
-    await tester.pump(); // SnackBarのアニメーション開始分だけpump（pumpAndSettleだと消えてしまう）
+    await tester.pump(); // SnackBarのアニメーション開始分だけpump(pumpAndSettleだと消えてしまう)
 
-    expect(find.text('すべての項目を入力してください'), findsOneWidget);
-    // デモアプリ自動登録（initialLocation経由）以外に新規登録が発生していないこと。
+    expect(find.text('APIキーを入力してください'), findsOneWidget);
+    // デモアプリ自動登録(initialLocation経由)以外に新規登録が発生していないこと。
     expect(container.read(connectedAppsProvider), hasLength(countBefore));
   });
 
-  testWidgets('全項目入力して送信するとアプリが登録され、初回スキャン経由でダッシュボードに遷移する',
+  testWidgets(
+      'APIキーを入力して送信すると、そのアカウント配下の全アプリがまとめて登録され、初回スキャン経由でダッシュボードに遷移する',
       (tester) async {
     await pumpRegistrationScreen(tester);
 
-    final fields = find.byType(TextField);
-    expect(fields, findsNWidgets(3)); // 表示名・Bundle ID・APIキーの3つ
-    await tester.enterText(fields.at(0), 'テスト用アプリ');
-    await tester.enterText(fields.at(1), 'works.petit.testapp');
-    await tester.enterText(fields.at(2), 'test-api-key');
+    final apiKeyField = find.byType(TextField);
+    expect(apiKeyField, findsOneWidget); // APIキーの1つだけ
+    await tester.enterText(apiKeyField, 'test-account-api-key');
     await tester.pump();
 
     await tapSubmit(tester);
     await tester.pumpAndSettle();
 
     // 初回スキャン画面を経由し、成功すれば自動的にダッシュボードへ戻る
-    // （initialScanProviderがAsyncDataになった時点でcontext.go('/dashboard')）。
-    expect(find.text('テスト用アプリ'), findsWidgets);
+    // (initialScanProviderがAsyncDataになった時点でcontext.go('/dashboard'))。
+    // MockDataService.discoverableAppsFor(iOS): Sample App 1 / Sample App 2 の2件。
+    expect(find.text('Sample App 1'), findsWidgets);
+    expect(find.text('Sample App 2'), findsWidgets);
 
     final registered = container
         .read(connectedAppsProvider)
-        .where((a) => a.displayName == 'テスト用アプリ');
-    expect(registered, hasLength(1));
-    expect(registered.first.bundleIdOrPackageName, 'works.petit.testapp');
-    expect(registered.first.hasApiKeyRegistered, isTrue);
+        .where((a) => a.displayName.startsWith('Sample App'));
+    expect(registered, hasLength(2));
+    expect(
+      registered.map((a) => a.bundleIdOrPackageName),
+      containsAll(['works.petit.sampleapp1', 'works.petit.sampleapp2']),
+    );
+    expect(registered.every((a) => a.hasApiKeyRegistered), isTrue);
   });
 }

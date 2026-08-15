@@ -146,11 +146,17 @@ abstract class AppLocalizations {
   /// **'アプリ登録'**
   String get appRegistrationTitle;
 
-  /// No description provided for @appRegistrationFillAllFields.
+  /// No description provided for @appRegistrationApiKeyRequired.
   ///
   /// In ja, this message translates to:
-  /// **'すべての項目を入力してください'**
-  String get appRegistrationFillAllFields;
+  /// **'APIキーを入力してください'**
+  String get appRegistrationApiKeyRequired;
+
+  /// No description provided for @appRegistrationNoAppsFound.
+  ///
+  /// In ja, this message translates to:
+  /// **'このAPIキーに紐づくアプリが見つかりませんでした'**
+  String get appRegistrationNoAppsFound;
 
   /// No description provided for @appRegistrationFailed.
   ///
@@ -158,17 +164,11 @@ abstract class AppLocalizations {
   /// **'登録に失敗しました: {error}'**
   String appRegistrationFailed(String error);
 
-  /// No description provided for @appRegistrationProgressAlmostDone.
+  /// No description provided for @appRegistrationBulkFetchDescription.
   ///
   /// In ja, this message translates to:
-  /// **'あと1ステップで自動監視が始まります'**
-  String get appRegistrationProgressAlmostDone;
-
-  /// No description provided for @appRegistrationProgressStart.
-  ///
-  /// In ja, this message translates to:
-  /// **'ここだけ頑張れば、あとは全部自動です'**
-  String get appRegistrationProgressStart;
+  /// **'APIキーを入力すると、そのアカウントに紐づくアプリをまとめて取得して登録します（1件ずつの登録は不要です）。'**
+  String get appRegistrationBulkFetchDescription;
 
   /// No description provided for @appRegistrationIosStep1.
   ///
@@ -224,24 +224,6 @@ abstract class AppLocalizations {
   /// **'APIキー発行手順（ユーザー作業）'**
   String get appRegistrationApiKeyStepsTitle;
 
-  /// No description provided for @appRegistrationDisplayNameLabel.
-  ///
-  /// In ja, this message translates to:
-  /// **'アプリの表示名'**
-  String get appRegistrationDisplayNameLabel;
-
-  /// No description provided for @appRegistrationBundleIdLabel.
-  ///
-  /// In ja, this message translates to:
-  /// **'Bundle ID'**
-  String get appRegistrationBundleIdLabel;
-
-  /// No description provided for @appRegistrationPackageNameLabel.
-  ///
-  /// In ja, this message translates to:
-  /// **'Package Name'**
-  String get appRegistrationPackageNameLabel;
-
   /// No description provided for @appRegistrationApiKeyLabel.
   ///
   /// In ja, this message translates to:
@@ -251,7 +233,7 @@ abstract class AppLocalizations {
   /// No description provided for @appRegistrationSubmit.
   ///
   /// In ja, this message translates to:
-  /// **'登録して初回スキャンを開始'**
+  /// **'アプリをまとめて取得して登録'**
   String get appRegistrationSubmit;
 
   /// No description provided for @appDetailExportTooltip.
@@ -385,6 +367,12 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'売上サマリーの取得に失敗しました'**
   String get errorRevenueFetchFailed;
+
+  /// No description provided for @errorAppDiscoveryFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリ一覧の取得に失敗しました'**
+  String get errorAppDiscoveryFailed;
 
   /// No description provided for @errorGeneric.
   ///

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/build_failure_log.dart';
 import 'package:ririkan/models/connected_app.dart';
+import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/rejection_detail.dart';
 import 'package:ririkan/models/review_status_snapshot.dart';
@@ -39,6 +40,12 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
     ConnectedApp app,
   ) async =>
       const ServiceFailure(ServiceFailureReason.buildFailureLogs);
+
+  @override
+  Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
+    String apiKey,
+  ) async =>
+      const ServiceFailure(ServiceFailureReason.appDiscovery);
 }
 
 void main() {

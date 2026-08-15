@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/connected_app.dart';
+import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/user_plan.dart';
 import 'package:ririkan/services/local_store_service.dart';
@@ -182,7 +183,11 @@ void main() {
   });
 
   group('ConnectedAppsNotifier.wouldHitPaywall', () {
-    test('無料プランは2アプリ登録済みで3本目登録時にペイウォールに達する', () async {
+    // 課金は一時的に無効化中（ユーザー指示）。2アプリ登録済み(無料プラン上限)で
+    // あっても常にfalseを返すことを確認する。再度有効化する際は、この
+    // テストも「無料プランは2アプリ登録済みで3本目登録時にペイウォールに達する」
+    // というisTrue期待に戻すこと。
+    test('課金無効化中は無料プランで上限を超えてもペイウォールに達しない', () async {
       final notifier = container.read(connectedAppsProvider.notifier);
       for (var i = 0; i < 2; i++) {
         await notifier.registerApp(
@@ -193,7 +198,7 @@ void main() {
           apiKey: 'key$i',
         );
       }
-      expect(notifier.wouldHitPaywall(UserPlan.free), isTrue);
+      expect(notifier.wouldHitPaywall(UserPlan.free), isFalse);
     });
 
     test('Proプランはペイウォールに達しない', () async {
@@ -208,6 +213,35 @@ void main() {
         );
       }
       expect(notifier.wouldHitPaywall(UserPlan.pro), isFalse);
+    });
+  });
+
+  group('ConnectedAppsNotifier.registerAppsBulk', () {
+    test('discoverAppsで見つかった複数アプリを1回の呼び出しでまとめて登録する', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      final registered = await notifier.registerAppsBulk(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        apiKey: 'shared-key',
+        discovered: const [
+          DiscoverableApp(
+            bundleIdOrPackageName: 'works.petit.bulk1',
+            displayName: 'Bulk App 1',
+          ),
+          DiscoverableApp(
+            bundleIdOrPackageName: 'works.petit.bulk2',
+            displayName: 'Bulk App 2',
+          ),
+        ],
+      );
+
+      expect(registered, hasLength(2));
+      expect(container.read(connectedAppsProvider), hasLength(2));
+      expect(registered.every((a) => a.hasApiKeyRegistered), isTrue);
+      expect(
+        container.read(connectedAppsProvider).map((a) => a.displayName),
+        containsAll(['Bulk App 1', 'Bulk App 2']),
+      );
     });
   });
 

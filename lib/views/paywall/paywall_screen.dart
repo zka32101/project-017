@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/gen/app_localizations.dart';
 import '../../models/user_plan.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
@@ -13,6 +14,7 @@ class PaywallScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -23,16 +25,14 @@ class PaywallScreen extends ConsumerWidget {
               const Icon(Icons.workspace_premium_outlined,
                   size: 64, color: AppTheme.warning),
               const SizedBox(height: 24),
-              Text('3本目のアプリを管理するには',
+              Text(l10n.paywallTitle,
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center),
               const SizedBox(height: 12),
-              const Text(
-                'Pro プランでアプリ登録数が無制限になります。\n'
-                'プッシュ通知即時化・ウィジェット・チーム共有も利用可能です。\n'
-                '¥600/月 または ¥5,000/年',
+              Text(
+                l10n.paywallBody,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textSecondary),
+                style: const TextStyle(color: AppTheme.textSecondary),
               ),
               const Spacer(),
               ElevatedButton(
@@ -43,12 +43,13 @@ class PaywallScreen extends ConsumerWidget {
                   context.pop();
                   context.push('/app-registration');
                 },
-                child: const Text('Pro にアップグレード'),
+                child: Text(l10n.paywallUpgrade),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => context.pop(),
-                child: const Text('あとで', style: TextStyle(color: AppTheme.textSecondary)),
+                child: Text(l10n.paywallLater,
+                    style: const TextStyle(color: AppTheme.textSecondary)),
               ),
             ],
           ),

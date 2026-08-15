@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/router/app_router.dart';
+
+import '../test_utils/test_app.dart';
 
 void main() {
   testWidgets('「次へ」を最後まで進めると「はじめる」に変わり、通知プロンプトへ遷移する',
@@ -9,7 +10,7 @@ void main() {
     final router = buildAppRouter();
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     router.go('/onboarding');

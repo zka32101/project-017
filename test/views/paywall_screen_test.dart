@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/user_plan.dart';
@@ -8,6 +7,7 @@ import 'package:ririkan/viewmodels/service_providers.dart';
 import 'package:ririkan/viewmodels/widget_sync_provider.dart';
 
 import '../test_utils/fakes.dart';
+import '../test_utils/test_app.dart';
 
 void main() {
   late ProviderContainer container;
@@ -32,7 +32,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     router.push('/paywall');

@@ -7,6 +7,7 @@ import 'package:ririkan/viewmodels/service_providers.dart';
 import 'package:ririkan/viewmodels/widget_sync_provider.dart';
 
 import '../test_utils/fakes.dart';
+import '../test_utils/test_app.dart';
 
 void main() {
   late ProviderContainer container;
@@ -28,7 +29,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: wrapWithLocalizedRouter(router),
       ),
     );
     // initialLocation は /dashboard のため、遷移前にデモアプリ自動登録

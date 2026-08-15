@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../models/connected_app.dart';
 import '../viewmodels/connected_apps_notifier.dart';
 import '../views/app_detail/app_detail_screen.dart';
@@ -98,6 +99,18 @@ ConnectedApp? _resolveConnectedApp(WidgetRef ref, String id) {
   return matches.isEmpty ? null : matches.first;
 }
 
+/// extra なしディープリンクでidに対応するアプリが見つからなかった場合の共通表示。
+class _AppNotFoundScaffold extends StatelessWidget {
+  const _AppNotFoundScaffold();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(child: Text(AppLocalizations.of(context).commonAppNotFound)),
+    );
+  }
+}
+
 class _AppDetailByIdResolver extends ConsumerWidget {
   final String id;
   const _AppDetailByIdResolver({required this.id});
@@ -106,7 +119,7 @@ class _AppDetailByIdResolver extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final app = _resolveConnectedApp(ref, id);
     if (app == null) {
-      return const Scaffold(body: Center(child: Text('アプリが見つかりません')));
+      return const _AppNotFoundScaffold();
     }
     return AppDetailScreen(app: app);
   }
@@ -120,7 +133,7 @@ class _ChecklistByIdResolver extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final app = _resolveConnectedApp(ref, id);
     if (app == null) {
-      return const Scaffold(body: Center(child: Text('アプリが見つかりません')));
+      return const _AppNotFoundScaffold();
     }
     return ChecklistScreen(app: app);
   }
@@ -134,7 +147,7 @@ class _ExportByIdResolver extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final app = _resolveConnectedApp(ref, id);
     if (app == null) {
-      return const Scaffold(body: Center(child: Text('アプリが見つかりません')));
+      return const _AppNotFoundScaffold();
     }
     return ExportScreen(app: app);
   }

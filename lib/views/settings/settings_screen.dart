@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/gen/app_localizations.dart';
 import '../../models/connected_app.dart';
 import '../../models/user_plan.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
@@ -11,27 +12,29 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final apps = ref.watch(connectedAppsProvider);
     final plan = ref.watch(userPlanProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('設定')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: ListView(
         children: [
           ListTile(
-            title: const Text('プラン'),
-            subtitle: Text(plan == UserPlan.pro ? 'Pro（無制限）' : 'Free（2アプリまで）'),
+            title: Text(l10n.settingsPlanLabel),
+            subtitle: Text(
+                plan == UserPlan.pro ? l10n.settingsPlanPro : l10n.settingsPlanFree),
           ),
           const Divider(),
           ListTile(
-            title: const Text('登録アプリ管理'),
-            subtitle: Text('${apps.length}件登録中'),
+            title: Text(l10n.settingsAppsManagementLabel),
+            subtitle: Text(l10n.settingsAppsCount(apps.length)),
           ),
           for (final app in apps) _AppSettingsTile(app: app),
           const Divider(),
-          const ListTile(
-            title: Text('通知設定'),
-            subtitle: Text('毎朝の状態サマリー通知（未実装・次フェーズ）'),
+          ListTile(
+            title: Text(l10n.settingsNotificationLabel),
+            subtitle: Text(l10n.settingsNotificationSubtitle),
           ),
         ],
       ),
@@ -54,6 +57,7 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
   bool _removing = false;
 
   Future<void> _remove() async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _removing = true);
     try {
       await ref.read(connectedAppsProvider.notifier).removeApp(widget.app.id);
@@ -63,7 +67,7 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
       if (!mounted) return;
       setState(() => _removing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('削除に失敗しました: $e')),
+        SnackBar(content: Text(l10n.settingsRemoveFailed('$e'))),
       );
     }
   }

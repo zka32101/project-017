@@ -81,6 +81,15 @@ class _FakeWidgetSyncService extends WidgetSyncService {
 void main() {
   testWidgets('起動するとダッシュボードが表示される（デモアプリ自動初期化）',
       (WidgetTester tester) async {
+    // RirikanApp（本物）は日本語＋英語の両方をsupportedLocalesに含むため、
+    // テスト実行環境のシステムロケール解決に依存させないよう'ja'に固定する
+    // （他のテストではラッパー側でlocale:を明示できるが、ここではRirikanAppを
+    // そのままpumpするため、テストバインディング側のロケールを上書きする）。
+    tester.platformDispatcher.localeTestValue = const Locale('ja');
+    tester.platformDispatcher.localesTestValue = const [Locale('ja')];
+    addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [

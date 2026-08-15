@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/gen/app_localizations.dart';
 import '../../models/connected_app.dart';
 import '../../models/submission_checklist_item.dart';
 import '../../theme/app_theme.dart';
@@ -16,6 +17,7 @@ class ChecklistScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     // 永続化された進捗を一度だけ復元する（無ければ何もしない＝初期状態のまま）。
     ref.watch(checklistBootstrapProvider(app.id));
     final items = ref.watch(checklistProvider(app.id));
@@ -24,7 +26,7 @@ class ChecklistScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('提出前チェックリスト・${app.displayName}'),
+        title: Text(l10n.checklistTitle(app.displayName)),
       ),
       body: Column(
         children: [
@@ -41,7 +43,7 @@ class ChecklistScreen extends ConsumerWidget {
                 final item = items[i];
                 return _ChecklistItemCard(
                   item: item,
-                  label: checklistService.labelFor(item.itemKey),
+                  label: checklistService.labelFor(l10n, item.itemKey),
                   onChanged: (result) =>
                       notifier.setResult(item.itemKey, result, DateTime.now()),
                 );
@@ -60,6 +62,7 @@ class _ProgressSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final passCount = items.where((i) => i.result == ChecklistResult.pass).length;
     final total = items.length;
     final progress = total == 0 ? 0.0 : passCount / total;
@@ -78,7 +81,7 @@ class _ProgressSummary extends StatelessWidget {
                   color: allPassed ? AppTheme.primary : AppTheme.warning,
                 ),
                 const SizedBox(width: 8),
-                Text('$passCount / $total 項目クリア'),
+                Text(l10n.checklistProgress(passCount, total)),
               ],
             ),
             const SizedBox(height: 8),
@@ -109,6 +112,7 @@ class _ChecklistItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -118,26 +122,26 @@ class _ChecklistItemCard extends StatelessWidget {
             Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
             SegmentedButton<ChecklistResult>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: ChecklistResult.unchecked,
-                  label: Text('未確認'),
-                  icon: Icon(Icons.radio_button_unchecked, size: 16),
+                  label: Text(l10n.checklistResultUnchecked),
+                  icon: const Icon(Icons.radio_button_unchecked, size: 16),
                 ),
                 ButtonSegment(
                   value: ChecklistResult.pass,
-                  label: Text('合格'),
-                  icon: Icon(Icons.check, size: 16),
+                  label: Text(l10n.checklistResultPass),
+                  icon: const Icon(Icons.check, size: 16),
                 ),
                 ButtonSegment(
                   value: ChecklistResult.warning,
-                  label: Text('要確認'),
-                  icon: Icon(Icons.priority_high, size: 16),
+                  label: Text(l10n.checklistResultWarning),
+                  icon: const Icon(Icons.priority_high, size: 16),
                 ),
                 ButtonSegment(
                   value: ChecklistResult.fail,
-                  label: Text('未対応'),
-                  icon: Icon(Icons.close, size: 16),
+                  label: Text(l10n.checklistResultFail),
+                  icon: const Icon(Icons.close, size: 16),
                 ),
               ],
               selected: {item.result},

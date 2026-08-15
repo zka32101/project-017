@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/gen/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 /// オンボーディング(3枚・プライバシー方針を明確に説明)。
@@ -16,26 +17,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   int _page = 0;
 
-  static const _pages = [
-    _OnboardPageData(
-      icon: Icons.dashboard_customize_outlined,
-      title: '複数アプリの状態を、1つの管制塔で',
-      body: 'App Store Connect と Play Console をまたいで、審査状態・ビルド状態をまとめて見張ります。',
-    ),
-    _OnboardPageData(
-      icon: Icons.notifications_active_outlined,
-      title: '登録後は完全自動',
-      body: '審査通過・リジェクト・ビルド完了を、あなたが確認しに行く前に通知します。',
-    ),
-    _OnboardPageData(
-      icon: Icons.lock_outline,
-      title: 'APIキーは端末内だけで保管',
-      body: 'Keychain / EncryptedSharedPreferences に保存し、サーバーには実行時以外保存しません。',
-    ),
-  ];
+  List<_OnboardPageData> _pages(AppLocalizations l10n) => [
+        _OnboardPageData(
+          icon: Icons.dashboard_customize_outlined,
+          title: l10n.onboardingPage1Title,
+          body: l10n.onboardingPage1Body,
+        ),
+        _OnboardPageData(
+          icon: Icons.notifications_active_outlined,
+          title: l10n.onboardingPage2Title,
+          body: l10n.onboardingPage2Body,
+        ),
+        _OnboardPageData(
+          icon: Icons.lock_outline,
+          title: l10n.onboardingPage3Title,
+          body: l10n.onboardingPage3Body,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final pages = _pages(l10n);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -43,16 +46,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Expanded(
               child: PageView.builder(
                 controller: _controller,
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 onPageChanged: (i) => setState(() => _page = i),
-                itemBuilder: (context, i) => _OnboardPage(data: _pages[i]),
+                itemBuilder: (context, i) => _OnboardPage(data: pages[i]),
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 children: [
-                  for (var i = 0; i < _pages.length; i++)
+                  for (var i = 0; i < pages.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: CircleAvatar(
@@ -68,7 +71,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       minimumSize: const Size(96, 44),
                     ),
                     onPressed: () {
-                      if (_page < _pages.length - 1) {
+                      if (_page < pages.length - 1) {
                         _controller.nextPage(
                           duration: const Duration(milliseconds: 250),
                           curve: Curves.easeOut,
@@ -77,7 +80,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         context.go('/notification-prompt');
                       }
                     },
-                    child: Text(_page < _pages.length - 1 ? '次へ' : 'はじめる'),
+                    child: Text(
+                        _page < pages.length - 1 ? l10n.onboardingNext : l10n.onboardingStart),
                   ),
                 ],
               ),

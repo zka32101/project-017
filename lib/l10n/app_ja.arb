@@ -1,0 +1,170 @@
+{
+  "@@locale": "ja",
+
+  "appTitle": "リリカン",
+  "@appTitle": {"description": "アプリ名・ダッシュボードのAppBarタイトル"},
+
+  "commonRetry": "再試行",
+  "commonAppNotFound": "アプリが見つかりません",
+
+  "dashboardEmptyMessage": "まだ登録アプリがありません",
+  "dashboardAddApp": "アプリを追加",
+  "dashboardStatusUnknown": "状態未取得",
+  "dashboardStatusLoading": "取得中…",
+
+  "appRegistrationTitle": "アプリ登録",
+  "appRegistrationFillAllFields": "すべての項目を入力してください",
+  "appRegistrationFailed": "登録に失敗しました: {error}",
+  "@appRegistrationFailed": {
+    "placeholders": {"error": {"type": "String"}}
+  },
+  "appRegistrationProgressAlmostDone": "あと1ステップで自動監視が始まります",
+  "appRegistrationProgressStart": "ここだけ頑張れば、あとは全部自動です",
+  "appRegistrationIosStep1": "App Store Connect にログイン",
+  "appRegistrationIosStep2": "ユーザーとアクセス → 統合 → キーを生成",
+  "appRegistrationIosStep3": "「App Manager」以上の最小権限スコープで発行",
+  "appRegistrationIosStep4": "発行された Issuer ID / Key ID / .p8 の内容をコピー",
+  "appRegistrationAndroidStep1": "Google Play Console にログイン",
+  "appRegistrationAndroidStep2": "API アクセス → サービスアカウントを作成",
+  "appRegistrationAndroidStep3": "最小権限ロール（表示専用など）で発行",
+  "appRegistrationAndroidStep4": "サービスアカウントJSONキーの内容をコピー",
+  "appRegistrationApiKeyStepsTitle": "APIキー発行手順（ユーザー作業）",
+  "appRegistrationDisplayNameLabel": "アプリの表示名",
+  "appRegistrationBundleIdLabel": "Bundle ID",
+  "appRegistrationPackageNameLabel": "Package Name",
+  "appRegistrationApiKeyLabel": "APIキー（端末内にのみ暗号化保存されます）",
+  "appRegistrationSubmit": "登録して初回スキャンを開始",
+
+  "appDetailExportTooltip": "エクスポート",
+  "appDetailChecklistTooltip": "提出前チェックリスト",
+  "appDetailTabReviewHistory": "審査履歴",
+  "appDetailTabCrashTrend": "クラッシュ推移",
+  "appDetailTabRevenue": "売上・DL数",
+  "appDetailTabRejection": "リジェクト理由",
+  "appDetailTabBuildFailure": "ビルド失敗ログ",
+  "appDetailReviewHistoryEmpty": "審査履歴はまだありません",
+  "appDetailCrashDataEmpty": "クラッシュデータはまだありません",
+  "appDetailCrashFreeRate": "クラッシュフリー率 {rate}% ・ {count}件",
+  "@appDetailCrashFreeRate": {
+    "placeholders": {
+      "rate": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "appDetailRevenueEmpty": "売上データはまだありません",
+  "appDetailRevenueSummaryLabel": "直近{days}日 売上",
+  "@appDetailRevenueSummaryLabel": {
+    "placeholders": {"days": {"type": "int"}}
+  },
+  "appDetailDownloadsTotalLabel": "DL数合計",
+  "appDetailRevenueRow": "{currency} {amount} ・ {downloads}DL",
+  "@appDetailRevenueRow": {
+    "placeholders": {
+      "currency": {"type": "String"},
+      "amount": {"type": "String"},
+      "downloads": {"type": "int"}
+    }
+  },
+  "appDetailRejectionEmpty": "リジェクト履歴はありません",
+  "appDetailRejectionUnknownReason": "理由不明",
+  "appDetailBuildFailureEmpty": "ビルド失敗ログはありません",
+  "appDetailBuildNumber": "Build {number}",
+  "@appDetailBuildNumber": {
+    "placeholders": {"number": {"type": "String"}}
+  },
+
+  "errorReviewStatusFetchFailed": "審査状態の取得に失敗しました",
+  "errorRejectionDetailsFetchFailed": "リジェクト理由の取得に失敗しました",
+  "errorBuildFailureLogsFetchFailed": "ビルド失敗ログの取得に失敗しました",
+  "errorRevenueFetchFailed": "売上サマリーの取得に失敗しました",
+  "errorGeneric": "エラーが発生しました",
+
+  "checklistTitle": "提出前チェックリスト・{appName}",
+  "@checklistTitle": {
+    "placeholders": {"appName": {"type": "String"}}
+  },
+  "checklistProgress": "{passCount} / {total} 項目クリア",
+  "@checklistProgress": {
+    "placeholders": {
+      "passCount": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "checklistResultUnchecked": "未確認",
+  "checklistResultPass": "合格",
+  "checklistResultWarning": "要確認",
+  "checklistResultFail": "未対応",
+  "checklistItemPrivacyPolicyUrl": "プライバシーポリシーURLの有効性",
+  "checklistItemAgeRating": "年齢設定",
+  "checklistItemScreenshotSize": "スクリーンショット規定サイズ",
+  "checklistItemMetadataRequiredFields": "メタデータ必須項目",
+  "checklistItemContactInfo": "連絡先情報",
+  "checklistItemDemoAccount": "審査用デモアカウント",
+  "checklistItemExportComplianceInfo": "暗号化・輸出コンプライアンス情報",
+
+  "exportTitle": "エクスポート・{appName}",
+  "@exportTitle": {
+    "placeholders": {"appName": {"type": "String"}}
+  },
+  "exportDescription": "審査履歴・リジェクト理由・ビルド失敗ログを1つのファイルにまとめます。",
+  "exportGenerate": "エクスポートを生成",
+  "exportFailedWithReason": "エクスポートに失敗しました: {error}",
+  "@exportFailedWithReason": {
+    "placeholders": {"error": {"type": "String"}}
+  },
+  "exportFailed": "エクスポートに失敗しました",
+  "exportGenerated": "{format} を生成しました",
+  "@exportGenerated": {
+    "placeholders": {"format": {"type": "String"}}
+  },
+  "exportExpiresAt": "有効期限: {date}まで",
+  "@exportExpiresAt": {
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "exportShare": "共有",
+
+  "onboardingPage1Title": "複数アプリの状態を、1つの管制塔で",
+  "onboardingPage1Body": "App Store Connect と Play Console をまたいで、審査状態・ビルド状態をまとめて見張ります。",
+  "onboardingPage2Title": "登録後は完全自動",
+  "onboardingPage2Body": "審査通過・リジェクト・ビルド完了を、あなたが確認しに行く前に通知します。",
+  "onboardingPage3Title": "APIキーは端末内だけで保管",
+  "onboardingPage3Body": "Keychain / EncryptedSharedPreferences に保存し、サーバーには実行時以外保存しません。",
+  "onboardingNext": "次へ",
+  "onboardingStart": "はじめる",
+
+  "notificationPromptTitle": "審査通過・リジェクトを見逃さないために",
+  "notificationPromptBody": "プッシュ通知を許可すると、状態が変わった瞬間にお知らせします。\n（本番実装ではここでOS標準の許可ダイアログを表示します）",
+  "notificationPromptAllow": "通知を許可する",
+  "notificationPromptLater": "あとで",
+
+  "paywallTitle": "3本目のアプリを管理するには",
+  "paywallBody": "Pro プランでアプリ登録数が無制限になります。\nプッシュ通知即時化・ウィジェット・チーム共有も利用可能です。\n¥600/月 または ¥5,000/年",
+  "paywallUpgrade": "Pro にアップグレード",
+  "paywallLater": "あとで",
+
+  "initialScanMessage": "登録したアプリの状態を確認しています…",
+  "initialScanSubMessage": "管制塔が起動しています",
+  "initialScanProceedAnyway": "ダッシュボードへ進む",
+
+  "settingsTitle": "設定",
+  "settingsPlanLabel": "プラン",
+  "settingsPlanPro": "Pro（無制限）",
+  "settingsPlanFree": "Free（2アプリまで）",
+  "settingsAppsManagementLabel": "登録アプリ管理",
+  "settingsAppsCount": "{count}件登録中",
+  "@settingsAppsCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "settingsNotificationLabel": "通知設定",
+  "settingsNotificationSubtitle": "毎朝の状態サマリー通知（未実装・次フェーズ）",
+  "settingsRemoveFailed": "削除に失敗しました: {error}",
+  "@settingsRemoveFailed": {
+    "placeholders": {"error": {"type": "String"}}
+  },
+
+  "reviewStatusWaitingReview": "審査待ち",
+  "reviewStatusInReview": "審査中",
+  "reviewStatusRejected": "リジェクト",
+  "reviewStatusApproved": "承認済み",
+  "reviewStatusLive": "公開中"
+}

@@ -30,13 +30,41 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dashboardStatusLoading => '取得中…';
 
   @override
+  String get dashboardSearchHint => 'アプリを検索';
+
+  @override
+  String get dashboardFilterAll => 'すべて';
+
+  @override
+  String get dashboardSortLabel => '並び替え';
+
+  @override
+  String get dashboardSortManual => '手動(ドラッグ)';
+
+  @override
+  String get dashboardSortName => '名前順';
+
+  @override
+  String get dashboardSortPlatform => 'プラットフォーム別';
+
+  @override
+  String get dashboardNoMatchMessage => '条件に一致するアプリがありません';
+
+  @override
   String get appRegistrationTitle => 'アプリ登録';
 
   @override
   String get appRegistrationApiKeyRequired => 'APIキーを入力してください';
 
   @override
-  String get appRegistrationNoAppsFound => 'このAPIキーに紐づくアプリが見つかりませんでした';
+  String get appRegistrationCredentialRequired =>
+      'Issuer ID・Key ID・秘密鍵をすべて入力してください';
+
+  @override
+  String get appRegistrationPackageNamesRequired => 'パッケージ名を1つ以上入力してください';
+
+  @override
+  String get appRegistrationNoAppsFound => '紐づくアプリが見つかりませんでした';
 
   @override
   String appRegistrationFailed(String error) {
@@ -44,8 +72,28 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get appRegistrationBulkFetchDescription =>
-      'APIキーを入力すると、そのアカウントに紐づくアプリをまとめて取得して登録します（1件ずつの登録は不要です）。';
+  String get appRegistrationBulkFetchDescriptionIos =>
+      'Issuer ID・Key ID・秘密鍵（.p8の内容）を入力すると、そのアカウントに紐づくアプリをApp Store Connect APIからまとめて取得して登録します（1件ずつの登録は不要です）。';
+
+  @override
+  String get appRegistrationBulkFetchDescriptionAndroid =>
+      'Google Play Developer APIにはアプリを自動検出する仕組みが無いため、登録したいアプリのパッケージ名を入力してください（サービスアカウントJSONキーは共通で1つ入力すればOKです）。';
+
+  @override
+  String get appRegistrationIssuerIdLabel => 'Issuer ID';
+
+  @override
+  String get appRegistrationKeyIdLabel => 'Key ID';
+
+  @override
+  String get appRegistrationPrivateKeyLabel => '秘密鍵（.p8ファイルの中身）';
+
+  @override
+  String get appRegistrationPackageNamesLabel => 'パッケージ名（1行に1つ）';
+
+  @override
+  String get appRegistrationPackageNamesHint =>
+      'works.petit.app1\nworks.petit.app2';
 
   @override
   String get appRegistrationIosStep1 => 'App Store Connect にログイン';
@@ -326,6 +374,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String settingsRemoveFailed(String error) {
     return '削除に失敗しました: $error';
+  }
+
+  @override
+  String settingsApiKeyMasked(String masked) {
+    return 'APIキー: $masked';
   }
 
   @override

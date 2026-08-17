@@ -59,4 +59,29 @@ void main() {
       isEmpty,
     );
   });
+
+  testWidgets('登録済みAPIキーは全文表示されず、末尾4文字だけのマスク表示になる',
+      (tester) async {
+    await container.read(connectedAppsProvider.notifier).registerApp(
+          userId: 'u1',
+          platform: PlatformType.ios,
+          bundleIdOrPackageName: 'works.petit.app1',
+          displayName: 'キー表示テストアプリ',
+          apiKey: 'test-api-key-1234',
+        );
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/settings');
+    await tester.pumpAndSettle();
+
+    expect(find.text('APIキー: ••••••••1234'), findsOneWidget);
+    // キー本体(先頭側)がそのまま画面に出ていないこと。
+    expect(find.textContaining('test-api-key-1234'), findsNothing);
+  });
 }

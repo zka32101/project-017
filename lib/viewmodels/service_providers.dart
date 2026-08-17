@@ -15,11 +15,17 @@ final secureStorageServiceProvider =
 final localStoreServiceProvider =
     Provider<LocalStoreService>((ref) => const LocalStoreService());
 
-final appStoreConnectServiceProvider =
-    Provider<AppStoreConnectService>((ref) => AppStoreConnectService());
+final appStoreConnectServiceProvider = Provider<AppStoreConnectService>(
+  (ref) => AppStoreConnectService(
+    secureStorageService: ref.watch(secureStorageServiceProvider),
+  ),
+);
 
-final playConsoleServiceProvider =
-    Provider<PlayConsoleService>((ref) => PlayConsoleService());
+final playConsoleServiceProvider = Provider<PlayConsoleService>(
+  (ref) => PlayConsoleService(
+    secureStorageService: ref.watch(secureStorageServiceProvider),
+  ),
+);
 
 final checklistServiceProvider =
     Provider<ChecklistService>((ref) => const ChecklistService());

@@ -6,6 +6,7 @@ import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/rejection_detail.dart';
 import 'package:ririkan/models/review_status_snapshot.dart';
+import 'package:ririkan/models/review_status_type.dart';
 import 'package:ririkan/router/app_router.dart';
 import 'package:ririkan/services/review_status_service.dart';
 import 'package:ririkan/services/service_result.dart';
@@ -53,12 +54,30 @@ void main() {
             apiKey: 'k',
           );
 
+  // AppStoreConnectService.fetchReviewStatus は実API接続になっているため、
+  // 'k' のような実際の認証情報になっていないテスト用アプリではデフォルトで
+  // 失敗する。以前のMockDataServiceと同じ値(iOS: '1.4.0' が審査中)を返す
+  // フェイクへ明示的に差し替える。
+  final iosFakeReviewStatus = reviewStatusServiceProvider(PlatformType.ios)
+      .overrideWithValue(
+    FakeReviewStatusService(
+      snapshot: ReviewStatusSnapshot(
+        id: 'fake_snap1',
+        connectedAppId: 'unused',
+        versionString: '1.4.0',
+        statusType: ReviewStatusType.inReview,
+        fetchedAt: DateTime(2026, 8, 5),
+      ),
+    ),
+  );
+
   testWidgets('審査履歴タブ（デフォルト）にモックデータが表示される', (tester) async {
     final container = ProviderContainer(
       overrides: [
         secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
         localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
         widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        iosFakeReviewStatus,
       ],
     );
     addTearDown(container.dispose);
@@ -74,7 +93,7 @@ void main() {
     router.go('/app-detail/${app.id}');
     await tester.pumpAndSettle();
 
-    // MockDataService: iOSは '1.4.0' が審査中で返る。
+    // フェイクServiceが返す '1.4.0'(旧MockDataServiceと同じ値)が表示される。
     expect(find.text('v1.4.0'), findsOneWidget);
   });
 

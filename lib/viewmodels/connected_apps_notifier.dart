@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../constants/demo_app_ids.dart';
 import '../models/connected_app.dart';
 import '../models/discoverable_app.dart';
 import '../models/platform_type.dart';
@@ -125,13 +126,13 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
   /// (`plan == UserPlan.free && state.length >= UserPlan.freeAppLimit`)に戻すこと。
   bool wouldHitPaywall(UserPlan plan) => false;
 
-  /// デモアプリの固定ID。乱数（uuid）にすると、状態がインメモリのみで
-  /// 永続化されていない現状、起動のたびに新しいIDでデモアプリが再登録され、
-  /// Secure Storage（Keychain/EncryptedSharedPreferences）に古いエントリが
-  /// 際限なく残り続けてしまう。固定IDにすることで再登録時は同じキーを
-  /// 上書きするだけになり、余計な秘密情報の蓄積を防ぐ。
-  static const _demoIosAppId = 'demo-app-ios';
-  static const _demoAndroidAppId = 'demo-app-android';
+  /// デモアプリの固定ID（lib/constants/demo_app_ids.dart）。乱数（uuid）にすると、
+  /// 状態がインメモリのみで永続化されていない現状、起動のたびに新しいIDで
+  /// デモアプリが再登録され、Secure Storage（Keychain/EncryptedSharedPreferences）
+  /// に古いエントリが際限なく残り続けてしまう。固定IDにすることで再登録時は
+  /// 同じキーを上書きするだけになり、余計な秘密情報の蓄積を防ぐ。
+  /// Service層（AppStoreConnectService/PlayConsoleService）もこのIDを参照し、
+  /// デモアプリに対しては実APIを呼ばずMockDataServiceのデータを返す。
 
   /// ドッグフーディング・実機テスト用：初回起動時にデモアプリを自動登録
   /// （オンボーディング→アプリ登録フロー不要で、直接ダッシュボードからテスト開始可能）
@@ -149,7 +150,7 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
     try {
       // デモアプリ1: iOS（App Store Connect版 Aha Moment 管理）
       final iosApp = await registerApp(
-        id: _demoIosAppId,
+        id: demoIosAppId,
         userId: 'demo_user',
         platform: PlatformType.ios,
         bundleIdOrPackageName: 'com.yourcompany.sampleios',
@@ -160,7 +161,7 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
 
       // デモアプリ2: Android（Play Console版）
       final androidApp = await registerApp(
-        id: _demoAndroidAppId,
+        id: demoAndroidAppId,
         userId: 'demo_user',
         platform: PlatformType.android,
         bundleIdOrPackageName: 'com.yourcompany.sampleandroid',

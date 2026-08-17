@@ -50,6 +50,10 @@ void main() {
         secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
         localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
         widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        // AppStoreConnectService.fetchReviewStatusは実API接続になっているため、
+        // 実ネットワーク呼び出しで失敗しないよう明示的にフェイクへ差し替える。
+        reviewStatusServiceProvider(PlatformType.ios)
+            .overrideWithValue(FakeReviewStatusService()),
       ],
     );
     addTearDown(container.dispose);

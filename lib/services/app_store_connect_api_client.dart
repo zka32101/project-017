@@ -4,6 +4,8 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/discoverable_app.dart';
+import '../models/review_status_snapshot.dart';
+import '../models/review_status_type.dart';
 
 /// App Store Connect APIへの認証・通信失敗を表す例外。
 /// メッセージは開発者向けの詳細情報であり、UI側は
@@ -39,14 +41,67 @@ class AppStoreConnectApiClient {
   /// GET /v1/apps でアカウント配下の全アプリを取得する。
   /// 1ページ目（最大200件）のみ取得する（MVP範囲、201件超の場合は次フェーズでページネーション対応）。
   Future<List<DiscoverableApp>> listApps(String credentialJson) async {
-    final creds = _parseCredential(credentialJson);
-    final token = _buildJwt(
-      issuerId: creds.issuerId,
-      keyId: creds.keyId,
-      privateKeyPem: creds.privateKey,
-    );
-
+    final token = _buildJwtFromCredentialJson(credentialJson);
     final uri = Uri.parse('$_baseUrl/apps?limit=200');
+    final body = await _getJson(uri, token);
+
+    final data = (body['data'] as List<dynamic>?) ?? const [];
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(_toDiscoverableApp)
+        .whereType<DiscoverableApp>()
+        .toList();
+  }
+
+  /// アプリの最新バージョンの審査状態を取得する（GET /v1/apps?filter[bundleId]=
+  /// でASC内部idを引き、GET /v1/apps/{id}/appStoreVersions で最新バージョンの
+  /// appStoreStateを見る）。該当アプリ・バージョンが1件も無い場合はnullを返す。
+  Future<ReviewStatusSnapshot?> fetchLatestReviewStatus({
+    required String credentialJson,
+    required String bundleId,
+    required String connectedAppId,
+  }) async {
+    final token = _buildJwtFromCredentialJson(credentialJson);
+
+    final ascAppId = await _findAppId(bundleId: bundleId, token: token);
+    if (ascAppId == null) return null;
+
+    final uri = Uri.parse('$_baseUrl/apps/$ascAppId/appStoreVersions?limit=10');
+    final body = await _getJson(uri, token);
+    final data = (body['data'] as List<dynamic>?) ?? const [];
+    final versions = data.whereType<Map<String, dynamic>>().toList()
+      // createdDateの新しい順に並べる(APIのデフォルト順に依存しないため)。
+      ..sort((a, b) {
+        final aDate = (a['attributes'] as Map<String, dynamic>?)?['createdDate'] as String?;
+        final bDate = (b['attributes'] as Map<String, dynamic>?)?['createdDate'] as String?;
+        return (bDate ?? '').compareTo(aDate ?? '');
+      });
+    if (versions.isEmpty) return null;
+
+    final attrs = versions.first['attributes'] as Map<String, dynamic>?;
+    final versionString = attrs?['versionString'] as String? ?? '';
+    final appStoreState = attrs?['appStoreState'] as String?;
+
+    return ReviewStatusSnapshot(
+      id: '${connectedAppId}_asc_latest',
+      connectedAppId: connectedAppId,
+      versionString: versionString,
+      statusType: _mapAppStoreState(appStoreState),
+      fetchedAt: DateTime.now(),
+    );
+  }
+
+  Future<String?> _findAppId({required String bundleId, required String token}) async {
+    final uri = Uri.parse(
+      '$_baseUrl/apps?filter%5BbundleId%5D=${Uri.encodeQueryComponent(bundleId)}&limit=1',
+    );
+    final body = await _getJson(uri, token);
+    final data = (body['data'] as List<dynamic>?) ?? const [];
+    if (data.isEmpty) return null;
+    return (data.first as Map<String, dynamic>?)?['id'] as String?;
+  }
+
+  Future<Map<String, dynamic>> _getJson(Uri uri, String token) async {
     final http.Response response;
     try {
       response = await _httpClient
@@ -55,27 +110,45 @@ class AppStoreConnectApiClient {
     } catch (e) {
       throw AppStoreConnectAuthException('App Store Connect APIへの接続に失敗しました: $e');
     }
-
     if (response.statusCode != 200) {
       throw AppStoreConnectAuthException(
         'App Store Connect APIがエラーを返しました(HTTP ${response.statusCode})。'
         'Issuer ID / Key ID / 秘密鍵の内容と権限スコープを確認してください。',
       );
     }
-
-    final Map<String, dynamic> body;
     try {
-      body = jsonDecode(response.body) as Map<String, dynamic>;
+      return jsonDecode(response.body) as Map<String, dynamic>;
     } catch (e) {
       throw AppStoreConnectAuthException('App Store Connect APIの応答を解析できませんでした: $e');
     }
+  }
 
-    final data = (body['data'] as List<dynamic>?) ?? const [];
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(_toDiscoverableApp)
-        .whereType<DiscoverableApp>()
-        .toList();
+  /// Apple公式ドキュメント「App and submission statuses」に載っている
+  /// AppStoreVersionState(細かい状態)を、このアプリの5値の
+  /// ReviewStatusType(審査待ち/審査中/リジェクト/承認済み/公開中)へ丸め込む。
+  /// 参考: https://developer.apple.com/help/app-store-connect/reference/app-and-submission-statuses
+  /// あくまで近似のマッピングであり、Apple側の状態遷移の全ニュアンスを
+  /// 表現しきれるものではない。
+  ReviewStatusType _mapAppStoreState(String? state) => switch (state) {
+        'PREPARE_FOR_SUBMISSION' ||
+        'READY_FOR_REVIEW' ||
+        'INVALID_BINARY' ||
+        'WAITING_FOR_REVIEW' =>
+          ReviewStatusType.waitingReview,
+        'IN_REVIEW' || 'PENDING_CONTRACT' => ReviewStatusType.inReview,
+        'REJECTED' || 'METADATA_REJECTED' || 'DEVELOPER_REJECTED' =>
+          ReviewStatusType.rejected,
+        'READY_FOR_DISTRIBUTION' => ReviewStatusType.live,
+        _ => ReviewStatusType.approved, // ACCEPTED/PENDING_DEVELOPER_RELEASE等、承認済み〜公開待ちの状態
+      };
+
+  String _buildJwtFromCredentialJson(String credentialJson) {
+    final creds = _parseCredential(credentialJson);
+    return _buildJwt(
+      issuerId: creds.issuerId,
+      keyId: creds.keyId,
+      privateKeyPem: creds.privateKey,
+    );
   }
 
   DiscoverableApp? _toDiscoverableApp(Map<String, dynamic> item) {

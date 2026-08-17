@@ -140,6 +140,48 @@ abstract class AppLocalizations {
   /// **'取得中…'**
   String get dashboardStatusLoading;
 
+  /// No description provided for @dashboardSearchHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリを検索'**
+  String get dashboardSearchHint;
+
+  /// No description provided for @dashboardFilterAll.
+  ///
+  /// In ja, this message translates to:
+  /// **'すべて'**
+  String get dashboardFilterAll;
+
+  /// No description provided for @dashboardSortLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'並び替え'**
+  String get dashboardSortLabel;
+
+  /// No description provided for @dashboardSortManual.
+  ///
+  /// In ja, this message translates to:
+  /// **'手動(ドラッグ)'**
+  String get dashboardSortManual;
+
+  /// No description provided for @dashboardSortName.
+  ///
+  /// In ja, this message translates to:
+  /// **'名前順'**
+  String get dashboardSortName;
+
+  /// No description provided for @dashboardSortPlatform.
+  ///
+  /// In ja, this message translates to:
+  /// **'プラットフォーム別'**
+  String get dashboardSortPlatform;
+
+  /// No description provided for @dashboardNoMatchMessage.
+  ///
+  /// In ja, this message translates to:
+  /// **'条件に一致するアプリがありません'**
+  String get dashboardNoMatchMessage;
+
   /// No description provided for @appRegistrationTitle.
   ///
   /// In ja, this message translates to:
@@ -673,6 +715,12 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'削除に失敗しました: {error}'**
   String settingsRemoveFailed(String error);
+
+  /// No description provided for @settingsApiKeyMasked.
+  ///
+  /// In ja, this message translates to:
+  /// **'APIキー: {masked}'**
+  String settingsApiKeyMasked(String masked);
 
   /// No description provided for @reviewStatusWaitingReview.
   ///

@@ -18,7 +18,9 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final apps = ref.watch(sortedConnectedAppsProvider);
+    final allApps = ref.watch(sortedConnectedAppsProvider);
+    final apps = ref.watch(filteredSortedConnectedAppsProvider);
+    final sortOption = ref.watch(dashboardSortOptionProvider);
     final plan = ref.watch(userPlanProvider);
     // ホーム画面ウィジェット用データを常に最新化する（Should機能の土台、失敗しても画面表示は継続）。
     ref.watch(widgetSyncProvider);
@@ -33,24 +35,66 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: [
+          PopupMenuButton<DashboardSortOption>(
+            icon: const Icon(Icons.sort),
+            tooltip: l10n.dashboardSortLabel,
+            initialValue: sortOption,
+            onSelected: (value) =>
+                ref.read(dashboardSortOptionProvider.notifier).state = value,
+            itemBuilder: (context) => [
+              CheckedPopupMenuItem(
+                value: DashboardSortOption.manual,
+                checked: sortOption == DashboardSortOption.manual,
+                child: Text(l10n.dashboardSortManual),
+              ),
+              CheckedPopupMenuItem(
+                value: DashboardSortOption.nameAsc,
+                checked: sortOption == DashboardSortOption.nameAsc,
+                child: Text(l10n.dashboardSortName),
+              ),
+              CheckedPopupMenuItem(
+                value: DashboardSortOption.platform,
+                checked: sortOption == DashboardSortOption.platform,
+                child: Text(l10n.dashboardSortPlatform),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push('/settings'),
           ),
         ],
       ),
-      body: apps.isEmpty
+      body: allApps.isEmpty
           ? _EmptyDashboard(message: l10n.dashboardEmptyMessage)
-          : ReorderableListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: apps.length,
-              onReorderItem: (oldIndex, newIndex) => ref
-                  .read(connectedAppsProvider.notifier)
-                  .reorder(oldIndex, newIndex),
-              itemBuilder: (context, i) => _AppStatusCard(
-                key: ValueKey(apps[i].id),
-                app: apps[i],
-              ),
+          : Column(
+              children: [
+                _SearchAndFilterBar(l10n: l10n),
+                Expanded(
+                  child: apps.isEmpty
+                      ? _EmptyDashboard(message: l10n.dashboardNoMatchMessage)
+                      : sortOption == DashboardSortOption.manual
+                          ? ReorderableListView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              itemCount: apps.length,
+                              onReorderItem: (oldIndex, newIndex) => ref
+                                  .read(connectedAppsProvider.notifier)
+                                  .reorder(oldIndex, newIndex),
+                              itemBuilder: (context, i) => _AppStatusCard(
+                                key: ValueKey(apps[i].id),
+                                app: apps[i],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              itemCount: apps.length,
+                              itemBuilder: (context, i) => _AppStatusCard(
+                                key: ValueKey(apps[i].id),
+                                app: apps[i],
+                              ),
+                            ),
+                ),
+              ],
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -63,6 +107,64 @@ class DashboardScreen extends ConsumerWidget {
         },
         icon: const Icon(Icons.add),
         label: Text(l10n.dashboardAddApp),
+      ),
+    );
+  }
+}
+
+/// 検索欄 + プラットフォームフィルターのチップ行。
+/// アプリが1件以上ある時だけ表示される(空状態では出す意味が無いため)。
+class _SearchAndFilterBar extends ConsumerWidget {
+  final AppLocalizations l10n;
+  const _SearchAndFilterBar({required this.l10n});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final platformFilter = ref.watch(dashboardPlatformFilterProvider);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            decoration: InputDecoration(
+              hintText: l10n.dashboardSearchHint,
+              prefixIcon: const Icon(Icons.search, size: 20),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            onChanged: (value) =>
+                ref.read(dashboardSearchQueryProvider.notifier).state = value,
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: Text(l10n.dashboardFilterAll),
+                selected: platformFilter == null,
+                onSelected: (_) => ref
+                    .read(dashboardPlatformFilterProvider.notifier)
+                    .state = null,
+              ),
+              ChoiceChip(
+                label: const Text('iOS'),
+                selected: platformFilter == PlatformType.ios,
+                onSelected: (_) => ref
+                    .read(dashboardPlatformFilterProvider.notifier)
+                    .state = PlatformType.ios,
+              ),
+              ChoiceChip(
+                label: const Text('Android'),
+                selected: platformFilter == PlatformType.android,
+                onSelected: (_) => ref
+                    .read(dashboardPlatformFilterProvider.notifier)
+                    .state = PlatformType.android,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

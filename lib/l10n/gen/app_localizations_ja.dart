@@ -30,6 +30,27 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dashboardStatusLoading => '取得中…';
 
   @override
+  String get dashboardSearchHint => 'アプリを検索';
+
+  @override
+  String get dashboardFilterAll => 'すべて';
+
+  @override
+  String get dashboardSortLabel => '並び替え';
+
+  @override
+  String get dashboardSortManual => '手動(ドラッグ)';
+
+  @override
+  String get dashboardSortName => '名前順';
+
+  @override
+  String get dashboardSortPlatform => 'プラットフォーム別';
+
+  @override
+  String get dashboardNoMatchMessage => '条件に一致するアプリがありません';
+
+  @override
   String get appRegistrationTitle => 'アプリ登録';
 
   @override
@@ -326,6 +347,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String settingsRemoveFailed(String error) {
     return '削除に失敗しました: $error';
+  }
+
+  @override
+  String settingsApiKeyMasked(String masked) {
+    return 'APIキー: $masked';
   }
 
   @override

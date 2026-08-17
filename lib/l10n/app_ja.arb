@@ -11,6 +11,13 @@
   "dashboardAddApp": "アプリを追加",
   "dashboardStatusUnknown": "状態未取得",
   "dashboardStatusLoading": "取得中…",
+  "dashboardSearchHint": "アプリを検索",
+  "dashboardFilterAll": "すべて",
+  "dashboardSortLabel": "並び替え",
+  "dashboardSortManual": "手動(ドラッグ)",
+  "dashboardSortName": "名前順",
+  "dashboardSortPlatform": "プラットフォーム別",
+  "dashboardNoMatchMessage": "条件に一致するアプリがありません",
 
   "appRegistrationTitle": "アプリ登録",
   "appRegistrationApiKeyRequired": "APIキーを入力してください",
@@ -158,6 +165,10 @@
   "settingsRemoveFailed": "削除に失敗しました: {error}",
   "@settingsRemoveFailed": {
     "placeholders": {"error": {"type": "String"}}
+  },
+  "settingsApiKeyMasked": "APIキー: {masked}",
+  "@settingsApiKeyMasked": {
+    "placeholders": {"masked": {"type": "String"}}
   },
 
   "reviewStatusWaitingReview": "審査待ち",

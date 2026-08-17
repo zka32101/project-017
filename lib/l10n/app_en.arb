@@ -10,6 +10,13 @@
   "dashboardAddApp": "Add App",
   "dashboardStatusUnknown": "Status unknown",
   "dashboardStatusLoading": "Loading…",
+  "dashboardSearchHint": "Search apps",
+  "dashboardFilterAll": "All",
+  "dashboardSortLabel": "Sort",
+  "dashboardSortManual": "Manual (drag)",
+  "dashboardSortName": "Name",
+  "dashboardSortPlatform": "Platform",
+  "dashboardNoMatchMessage": "No apps match your filters",
 
   "appRegistrationTitle": "Register App",
   "appRegistrationApiKeyRequired": "Please enter an API key",
@@ -109,6 +116,7 @@
   "settingsNotificationLabel": "Notifications",
   "settingsNotificationSubtitle": "Daily morning summary notification (not yet implemented)",
   "settingsRemoveFailed": "Failed to remove: {error}",
+  "settingsApiKeyMasked": "API Key: {masked}",
 
   "reviewStatusWaitingReview": "Waiting for Review",
   "reviewStatusInReview": "In Review",

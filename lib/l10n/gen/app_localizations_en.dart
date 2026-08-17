@@ -30,6 +30,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardStatusLoading => 'Loading…';
 
   @override
+  String get dashboardSearchHint => 'Search apps';
+
+  @override
+  String get dashboardFilterAll => 'All';
+
+  @override
+  String get dashboardSortLabel => 'Sort';
+
+  @override
+  String get dashboardSortManual => 'Manual (drag)';
+
+  @override
+  String get dashboardSortName => 'Name';
+
+  @override
+  String get dashboardSortPlatform => 'Platform';
+
+  @override
+  String get dashboardNoMatchMessage => 'No apps match your filters';
+
+  @override
   String get appRegistrationTitle => 'Register App';
 
   @override
@@ -340,6 +361,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String settingsRemoveFailed(String error) {
     return 'Failed to remove: $error';
+  }
+
+  @override
+  String settingsApiKeyMasked(String masked) {
+    return 'API Key: $masked';
   }
 
   @override

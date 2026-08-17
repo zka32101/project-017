@@ -1,6 +1,5 @@
 import '../models/build_failure_log.dart';
 import '../models/crash_summary.dart';
-import '../models/discoverable_app.dart';
 import '../models/platform_type.dart';
 import '../models/rejection_detail.dart';
 import '../models/review_status_snapshot.dart';
@@ -46,35 +45,6 @@ class MockDataService {
     PlatformType platform,
   ) =>
       [];
-
-  /// 「APIキー1つでアカウント配下のアプリをまとめて取得」フロー用のモック応答。
-  /// 実APIキーの値によってアプリの内容は変わらない(MVP段階ではAPIキーの正当性
-  /// 検証も行わない)。実App Store Connect API(GET /v1/apps)・Play Developer
-  /// APIとの実接続は次フェーズ。
-  List<DiscoverableApp> discoverableAppsFor(PlatformType platform) {
-    if (platform == PlatformType.ios) {
-      return const [
-        DiscoverableApp(
-          bundleIdOrPackageName: 'works.petit.sampleapp1',
-          displayName: 'Sample App 1',
-        ),
-        DiscoverableApp(
-          bundleIdOrPackageName: 'works.petit.sampleapp2',
-          displayName: 'Sample App 2',
-        ),
-      ];
-    }
-    return const [
-      DiscoverableApp(
-        bundleIdOrPackageName: 'works.petit.sampleapp1',
-        displayName: 'Sample App 1',
-      ),
-      DiscoverableApp(
-        bundleIdOrPackageName: 'works.petit.sampleapp2',
-        displayName: 'Sample App 2',
-      ),
-    ];
-  }
 
   List<CrashSummary> crashSummariesFor(String connectedAppId) {
     final now = DateTime(2026, 8, 5);

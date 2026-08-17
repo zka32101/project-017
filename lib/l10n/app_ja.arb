@@ -21,12 +21,20 @@
 
   "appRegistrationTitle": "アプリ登録",
   "appRegistrationApiKeyRequired": "APIキーを入力してください",
-  "appRegistrationNoAppsFound": "このAPIキーに紐づくアプリが見つかりませんでした",
+  "appRegistrationCredentialRequired": "Issuer ID・Key ID・秘密鍵をすべて入力してください",
+  "appRegistrationPackageNamesRequired": "パッケージ名を1つ以上入力してください",
+  "appRegistrationNoAppsFound": "紐づくアプリが見つかりませんでした",
   "appRegistrationFailed": "登録に失敗しました: {error}",
   "@appRegistrationFailed": {
     "placeholders": {"error": {"type": "String"}}
   },
-  "appRegistrationBulkFetchDescription": "APIキーを入力すると、そのアカウントに紐づくアプリをまとめて取得して登録します（1件ずつの登録は不要です）。",
+  "appRegistrationBulkFetchDescriptionIos": "Issuer ID・Key ID・秘密鍵（.p8の内容）を入力すると、そのアカウントに紐づくアプリをApp Store Connect APIからまとめて取得して登録します（1件ずつの登録は不要です）。",
+  "appRegistrationBulkFetchDescriptionAndroid": "Google Play Developer APIにはアプリを自動検出する仕組みが無いため、登録したいアプリのパッケージ名を入力してください（サービスアカウントJSONキーは共通で1つ入力すればOKです）。",
+  "appRegistrationIssuerIdLabel": "Issuer ID",
+  "appRegistrationKeyIdLabel": "Key ID",
+  "appRegistrationPrivateKeyLabel": "秘密鍵（.p8ファイルの中身）",
+  "appRegistrationPackageNamesLabel": "パッケージ名（1行に1つ）",
+  "appRegistrationPackageNamesHint": "works.petit.app1\nworks.petit.app2",
   "appRegistrationIosStep1": "App Store Connect にログイン",
   "appRegistrationIosStep2": "ユーザーとアクセス → 統合 → キーを生成",
   "appRegistrationIosStep3": "「App Manager」以上の最小権限スコープで発行",

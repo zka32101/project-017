@@ -57,8 +57,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appRegistrationApiKeyRequired => 'Please enter an API key';
 
   @override
-  String get appRegistrationNoAppsFound =>
-      'No apps were found for this API key';
+  String get appRegistrationCredentialRequired =>
+      'Please fill in Issuer ID, Key ID, and Private Key';
+
+  @override
+  String get appRegistrationPackageNamesRequired =>
+      'Please enter at least one package name';
+
+  @override
+  String get appRegistrationNoAppsFound => 'No linked apps were found';
 
   @override
   String appRegistrationFailed(String error) {
@@ -66,8 +73,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get appRegistrationBulkFetchDescription =>
-      'Enter an API key and every app under that account is fetched and registered at once (no need to register apps one by one).';
+  String get appRegistrationBulkFetchDescriptionIos =>
+      'Enter your Issuer ID, Key ID, and Private Key (.p8 contents) and every app under that account is fetched from the App Store Connect API and registered at once (no need to register apps one by one).';
+
+  @override
+  String get appRegistrationBulkFetchDescriptionAndroid =>
+      'The Google Play Developer API has no way to auto-discover apps, so enter the package names you want to register (one shared service account JSON key covers all of them).';
+
+  @override
+  String get appRegistrationIssuerIdLabel => 'Issuer ID';
+
+  @override
+  String get appRegistrationKeyIdLabel => 'Key ID';
+
+  @override
+  String get appRegistrationPrivateKeyLabel =>
+      'Private Key (.p8 file contents)';
+
+  @override
+  String get appRegistrationPackageNamesLabel => 'Package Names (one per line)';
+
+  @override
+  String get appRegistrationPackageNamesHint =>
+      'works.petit.app1\nworks.petit.app2';
 
   @override
   String get appRegistrationIosStep1 => 'Sign in to App Store Connect';

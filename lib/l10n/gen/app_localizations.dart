@@ -194,10 +194,22 @@ abstract class AppLocalizations {
   /// **'APIキーを入力してください'**
   String get appRegistrationApiKeyRequired;
 
+  /// No description provided for @appRegistrationCredentialRequired.
+  ///
+  /// In ja, this message translates to:
+  /// **'Issuer ID・Key ID・秘密鍵をすべて入力してください'**
+  String get appRegistrationCredentialRequired;
+
+  /// No description provided for @appRegistrationPackageNamesRequired.
+  ///
+  /// In ja, this message translates to:
+  /// **'パッケージ名を1つ以上入力してください'**
+  String get appRegistrationPackageNamesRequired;
+
   /// No description provided for @appRegistrationNoAppsFound.
   ///
   /// In ja, this message translates to:
-  /// **'このAPIキーに紐づくアプリが見つかりませんでした'**
+  /// **'紐づくアプリが見つかりませんでした'**
   String get appRegistrationNoAppsFound;
 
   /// No description provided for @appRegistrationFailed.
@@ -206,11 +218,47 @@ abstract class AppLocalizations {
   /// **'登録に失敗しました: {error}'**
   String appRegistrationFailed(String error);
 
-  /// No description provided for @appRegistrationBulkFetchDescription.
+  /// No description provided for @appRegistrationBulkFetchDescriptionIos.
   ///
   /// In ja, this message translates to:
-  /// **'APIキーを入力すると、そのアカウントに紐づくアプリをまとめて取得して登録します（1件ずつの登録は不要です）。'**
-  String get appRegistrationBulkFetchDescription;
+  /// **'Issuer ID・Key ID・秘密鍵（.p8の内容）を入力すると、そのアカウントに紐づくアプリをApp Store Connect APIからまとめて取得して登録します（1件ずつの登録は不要です）。'**
+  String get appRegistrationBulkFetchDescriptionIos;
+
+  /// No description provided for @appRegistrationBulkFetchDescriptionAndroid.
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Play Developer APIにはアプリを自動検出する仕組みが無いため、登録したいアプリのパッケージ名を入力してください（サービスアカウントJSONキーは共通で1つ入力すればOKです）。'**
+  String get appRegistrationBulkFetchDescriptionAndroid;
+
+  /// No description provided for @appRegistrationIssuerIdLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'Issuer ID'**
+  String get appRegistrationIssuerIdLabel;
+
+  /// No description provided for @appRegistrationKeyIdLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'Key ID'**
+  String get appRegistrationKeyIdLabel;
+
+  /// No description provided for @appRegistrationPrivateKeyLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'秘密鍵（.p8ファイルの中身）'**
+  String get appRegistrationPrivateKeyLabel;
+
+  /// No description provided for @appRegistrationPackageNamesLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'パッケージ名（1行に1つ）'**
+  String get appRegistrationPackageNamesLabel;
+
+  /// No description provided for @appRegistrationPackageNamesHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'works.petit.app1\nworks.petit.app2'**
+  String get appRegistrationPackageNamesHint;
 
   /// No description provided for @appRegistrationIosStep1.
   ///

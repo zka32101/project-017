@@ -35,8 +35,9 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
 
   @override
   Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
-    String apiKey,
-  ) async =>
+    String apiKey, {
+    List<String> knownPackageNames = const [],
+  }) async =>
       const ServiceFailure(ServiceFailureReason.appDiscovery);
 }
 

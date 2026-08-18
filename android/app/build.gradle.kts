@@ -20,7 +20,9 @@ android {
         applicationId = "works.petit.ririkan"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21
+        // google_mobile_ads(9.1.0)がminSdk 24を要求するため、21から引き上げ
+        // （Android 7.0+のみ対応になる。Android 6以下は広告表示SDKの都合上サポート対象外）。
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

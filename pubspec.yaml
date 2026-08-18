@@ -80,7 +80,7 @@ dependencies:
   # マネタイズ（広告表示＋月$1で広告非表示）: バナー広告表示にgoogle_mobile_ads、
   # 「広告を消す」購入(App内課金)にRevenueCatのクライアントSDKであるpurchases_flutter
   # を使用する(REST APIベースの分析用RevenueCat連携とは別物、SDKキーも別)。
-  google_mobile_ads: ^6.0.0
+  google_mobile_ads: ^9.1.0
   purchases_flutter: ^9.5.4
 
 dev_dependencies:

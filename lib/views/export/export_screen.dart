@@ -6,14 +6,17 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../models/connected_app.dart';
 import '../../models/export_job.dart';
 import '../../theme/app_theme.dart';
+import '../../viewmodels/connected_apps_notifier.dart';
 import '../../viewmodels/export_provider.dart';
 
 /// レポートエクスポート（Should機能）: 審査履歴・リジェクト理由・ビルド失敗ログをPDF/CSVで出力。
 /// 審査対応の記録保存・外注先共有等の用途を想定（設計書 Step3）。
-/// MVPは単一アプリのみ対応（全アプリ集約エクスポートは次フェーズ）。
+/// app=nullの場合は「全アプリ集約エクスポート」モードになり、その時点の
+/// 登録アプリ全件をまとめて1つのファイルに出力する（ダッシュボードの
+/// エクスポートアイコンから遷移、/export-allルート）。
 class ExportScreen extends ConsumerStatefulWidget {
-  final ConnectedApp app;
-  const ExportScreen({super.key, required this.app});
+  final ConnectedApp? app;
+  const ExportScreen({super.key, this.app});
 
   @override
   ConsumerState<ExportScreen> createState() => _ExportScreenState();
@@ -35,15 +38,22 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final exportState = ref.watch(exportProvider);
+    final app = widget.app;
+    final isAllApps = app == null;
+    // 全アプリ集約モードでは、生成ボタンを押した時点の登録アプリ一覧をそのまま使う。
+    final allApps =
+        isAllApps ? ref.watch(connectedAppsProvider) : const <ConnectedApp>[];
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.exportTitle(widget.app.displayName))),
+      appBar: AppBar(
+        title: Text(isAllApps ? l10n.exportAllTitle : l10n.exportTitle(app.displayName)),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.exportDescription,
+            Text(isAllApps ? l10n.exportAllDescription : l10n.exportDescription,
                 style: const TextStyle(color: AppTheme.textSecondary)),
             const SizedBox(height: 20),
             SegmentedButton<ExportFormat>(
@@ -56,12 +66,18 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: exportState is AsyncLoading
+              onPressed: exportState is AsyncLoading ||
+                      (isAllApps && allApps.isEmpty)
                   ? null
-                  : () => ref.read(exportProvider.notifier).runExport(
-                        app: widget.app,
-                        format: _format,
-                      ),
+                  : () => isAllApps
+                      ? ref.read(exportProvider.notifier).runExportAll(
+                            apps: allApps,
+                            format: _format,
+                          )
+                      : ref.read(exportProvider.notifier).runExport(
+                            app: app,
+                            format: _format,
+                          ),
               child: exportState is AsyncLoading
                   ? const SizedBox(
                       width: 20,

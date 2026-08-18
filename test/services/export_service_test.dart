@@ -70,6 +70,63 @@ void main() {
     });
   });
 
+  group('ExportService.buildCsvForAll', () {
+    const app2 = ConnectedApp(
+      id: 'app2',
+      userId: 'u1',
+      platform: PlatformType.android,
+      bundleIdOrPackageName: 'works.petit.app2',
+      displayName: 'テストアプリ2',
+      sortOrder: 1,
+    );
+
+    test('アプリごとの見出しと各セクションが繰り返し出力される', () {
+      final bundle1 = AppExportBundle(
+        app: app,
+        reviewHistory: [
+          ReviewStatusSnapshot(
+            id: 's1',
+            connectedAppId: app.id,
+            versionString: '1.0.0',
+            statusType: ReviewStatusType.live,
+            fetchedAt: DateTime(2026, 8, 1),
+          ),
+        ],
+        rejections: const [],
+        buildFailures: const [],
+      );
+      final bundle2 = AppExportBundle(
+        app: app2,
+        reviewHistory: [
+          ReviewStatusSnapshot(
+            id: 's2',
+            connectedAppId: app2.id,
+            versionString: '2.0.0',
+            statusType: ReviewStatusType.inReview,
+            fetchedAt: DateTime(2026, 8, 2),
+          ),
+        ],
+        rejections: const [],
+        buildFailures: const [],
+      );
+
+      const service = ExportService();
+      final csv = service.buildCsvForAll([bundle1, bundle2]);
+
+      expect(csv, contains('全アプリ集約'));
+      expect(csv, contains('テストアプリ'));
+      expect(csv, contains('1.0.0'));
+      expect(csv, contains('テストアプリ2'));
+      expect(csv, contains('2.0.0'));
+    });
+
+    test('空リストでも例外を投げない', () {
+      const service = ExportService();
+      final csv = service.buildCsvForAll([]);
+      expect(csv, contains('全アプリ集約'));
+    });
+  });
+
   group('ExportService.sanitizeForFileName', () {
     test('パス区切り文字を含む表示名は安全な文字に置換される', () {
       // app.displayNameはアプリ登録画面の自由入力欄のため、'/'を含む名前が

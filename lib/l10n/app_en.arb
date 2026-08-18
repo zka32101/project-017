@@ -92,6 +92,9 @@
   "exportGenerated": "{format} generated",
   "exportExpiresAt": "Valid until: {date}",
   "exportShare": "Share",
+  "exportAllTitle": "Export All Apps",
+  "exportAllDescription": "Bundles review history, rejection reasons, and build failure logs for every registered app into a single file.",
+  "dashboardExportAllTooltip": "Export all apps",
 
   "onboardingPage1Title": "Monitor every app from one control tower",
   "onboardingPage1Body": "Keep watch over review and build status across both App Store Connect and Play Console.",
@@ -103,7 +106,7 @@
   "onboardingStart": "Get Started",
 
   "notificationPromptTitle": "Never miss an approval or rejection",
-  "notificationPromptBody": "Allow push notifications and we'll tell you the moment something changes.\n(The production build will show the OS permission dialog here.)",
+  "notificationPromptBody": "Allow notifications and we'll send you a daily reminder to check your apps' review status.",
   "notificationPromptAllow": "Allow Notifications",
   "notificationPromptLater": "Later",
 
@@ -122,8 +125,9 @@
   "settingsPlanFree": "Free (up to 2 apps)",
   "settingsAppsManagementLabel": "Manage Registered Apps",
   "settingsAppsCount": "{count} registered",
-  "settingsNotificationLabel": "Notifications",
-  "settingsNotificationSubtitle": "Daily morning summary notification (not yet implemented)",
+  "settingsNotificationLabel": "Daily Reminder",
+  "settingsNotificationSubtitle": "Sends a reminder to check review status every day at 9:00 AM",
+  "settingsNotificationPermissionDenied": "Notifications are not allowed. Please enable them in your device settings",
   "settingsRemoveFailed": "Failed to remove: {error}",
   "settingsApiKeyMasked": "API Key: {masked}",
 

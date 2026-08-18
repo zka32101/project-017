@@ -70,6 +70,13 @@ dependencies:
   flutter_web_auth_2: ^4.1.0
   crypto: ^3.0.6
 
+  # 毎朝の状態サマリー通知（Should機能）: ローカル通知のスケジューリングに
+  # flutter_local_notifications、毎日同一時刻(端末のローカルタイムゾーン)への
+  # 繰り返しスケジューリングにtimezone/flutter_timezoneを使用する。
+  flutter_local_notifications: ^19.4.2
+  timezone: ^0.10.1
+  flutter_timezone: ^4.1.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

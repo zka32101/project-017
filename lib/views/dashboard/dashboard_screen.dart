@@ -59,6 +59,12 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
+          if (allApps.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.ios_share_outlined),
+              tooltip: l10n.dashboardExportAllTooltip,
+              onPressed: () => context.push('/export-all'),
+            ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push('/settings'),

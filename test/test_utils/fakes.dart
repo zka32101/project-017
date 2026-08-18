@@ -13,6 +13,7 @@ import 'package:ririkan/models/rejection_detail.dart';
 import 'package:ririkan/models/review_status_snapshot.dart';
 import 'package:ririkan/models/submission_checklist_item.dart';
 import 'package:ririkan/services/local_store_service.dart';
+import 'package:ririkan/services/notification_service.dart';
 import 'package:ririkan/services/review_status_service.dart';
 import 'package:ririkan/services/secure_storage_service.dart';
 import 'package:ririkan/services/service_result.dart';
@@ -96,6 +97,44 @@ class FakeWidgetSyncService extends WidgetSyncService {
     required int attentionCount,
     required ConnectedApp? topAttentionApp,
   }) async {}
+}
+
+/// NotificationService(flutter_local_notifications)は実プラットフォーム
+/// チャネルを叩くため、flutter test環境ではこのフェイクへ差し替える。
+/// permissionGranted で requestPermission() の戻り値を制御できる。
+class FakeNotificationService implements NotificationService {
+  FakeNotificationService({this.permissionGranted = true});
+
+  final bool permissionGranted;
+  bool initializeCalled = false;
+  bool requestPermissionCalled = false;
+  bool scheduleCalled = false;
+  bool cancelCalled = false;
+  int? scheduledHour;
+  int? scheduledMinute;
+
+  @override
+  Future<void> initialize() async {
+    initializeCalled = true;
+  }
+
+  @override
+  Future<bool> requestPermission() async {
+    requestPermissionCalled = true;
+    return permissionGranted;
+  }
+
+  @override
+  Future<void> scheduleDailyReminder({int hour = 9, int minute = 0}) async {
+    scheduleCalled = true;
+    scheduledHour = hour;
+    scheduledMinute = minute;
+  }
+
+  @override
+  Future<void> cancelDailyReminder() async {
+    cancelCalled = true;
+  }
 }
 
 /// AppStoreConnectService/PlayConsoleServiceは今やdiscoverApps/

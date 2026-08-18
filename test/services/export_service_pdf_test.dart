@@ -47,4 +47,53 @@ void main() {
       expect(header, '%PDF');
     });
   });
+
+  group('ExportService.buildPdfForAll（全アプリ集約、日本語フォント埋め込み）', () {
+    test('複数アプリ分をまとめても有効なPDFを生成できる', () async {
+      const app2 = ConnectedApp(
+        id: 'app2',
+        userId: 'u1',
+        platform: PlatformType.android,
+        bundleIdOrPackageName: 'works.petit.app2',
+        displayName: '日本語テストアプリ2',
+        sortOrder: 1,
+      );
+      const service = ExportService();
+      final bundles = [
+        AppExportBundle(
+          app: app,
+          reviewHistory: [
+            ReviewStatusSnapshot(
+              id: 's1',
+              connectedAppId: app.id,
+              versionString: '1.0.0',
+              statusType: ReviewStatusType.rejected,
+              fetchedAt: DateTime(2026, 8, 5),
+            ),
+          ],
+          rejections: const [],
+          buildFailures: const [],
+        ),
+        const AppExportBundle(
+          app: app2,
+          reviewHistory: [],
+          rejections: [],
+          buildFailures: [],
+        ),
+      ];
+
+      final bytes = await service.buildPdfForAll(bundles);
+
+      expect(bytes.length, greaterThan(1000));
+      final header = String.fromCharCodes(bytes.take(4));
+      expect(header, '%PDF');
+    });
+
+    test('アプリが1件も無くても例外を投げず有効なPDFを生成する', () async {
+      const service = ExportService();
+      final bytes = await service.buildPdfForAll([]);
+      final header = String.fromCharCodes(bytes.take(4));
+      expect(header, '%PDF');
+    });
+  });
 }

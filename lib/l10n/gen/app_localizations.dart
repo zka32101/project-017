@@ -602,6 +602,24 @@ abstract class AppLocalizations {
   /// **'共有'**
   String get exportShare;
 
+  /// No description provided for @exportAllTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'全アプリ集約エクスポート'**
+  String get exportAllTitle;
+
+  /// No description provided for @exportAllDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'登録中の全アプリの審査履歴・リジェクト理由・ビルド失敗ログを1つのファイルにまとめます。'**
+  String get exportAllDescription;
+
+  /// No description provided for @dashboardExportAllTooltip.
+  ///
+  /// In ja, this message translates to:
+  /// **'全アプリをエクスポート'**
+  String get dashboardExportAllTooltip;
+
   /// No description provided for @onboardingPage1Title.
   ///
   /// In ja, this message translates to:
@@ -659,7 +677,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationPromptBody.
   ///
   /// In ja, this message translates to:
-  /// **'プッシュ通知を許可すると、状態が変わった瞬間にお知らせします。\n（本番実装ではここでOS標準の許可ダイアログを表示します）'**
+  /// **'通知を許可すると、毎朝決まった時刻に審査状況確認のリマインダーをお届けします。'**
   String get notificationPromptBody;
 
   /// No description provided for @notificationPromptAllow.
@@ -755,14 +773,20 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNotificationLabel.
   ///
   /// In ja, this message translates to:
-  /// **'通知設定'**
+  /// **'毎朝の通知'**
   String get settingsNotificationLabel;
 
   /// No description provided for @settingsNotificationSubtitle.
   ///
   /// In ja, this message translates to:
-  /// **'毎朝の状態サマリー通知（未実装・次フェーズ）'**
+  /// **'毎朝9:00に審査状況確認のリマインダーを送信します'**
   String get settingsNotificationSubtitle;
+
+  /// No description provided for @settingsNotificationPermissionDenied.
+  ///
+  /// In ja, this message translates to:
+  /// **'通知が許可されていません。端末の設定アプリから許可してください'**
+  String get settingsNotificationPermissionDenied;
 
   /// No description provided for @settingsRemoveFailed.
   ///

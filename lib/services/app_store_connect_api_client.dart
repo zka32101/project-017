@@ -39,18 +39,33 @@ class AppStoreConnectApiClient {
   static const _baseUrl = 'https://api.appstoreconnect.apple.com/v1';
 
   /// GET /v1/apps でアカウント配下の全アプリを取得する。
-  /// 1ページ目（最大200件）のみ取得する（MVP範囲、201件超の場合は次フェーズでページネーション対応）。
+  /// App Store Connect APIはJSON:API準拠のカーソルページネーション
+  /// (`links.next`に次ページの完全なURLが入る、無ければ最終ページ)を採用しており、
+  /// `links.next`が無くなるまで辿って全件取得する（201件超のアカウントにも対応）。
+  /// 暴走防止のため最大50ページ(=最大1万件)で打ち切る。
   Future<List<DiscoverableApp>> listApps(String credentialJson) async {
     final token = _buildJwtFromCredentialJson(credentialJson);
-    final uri = Uri.parse('$_baseUrl/apps?limit=200');
-    final body = await _getJson(uri, token);
 
-    final data = (body['data'] as List<dynamic>?) ?? const [];
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(_toDiscoverableApp)
-        .whereType<DiscoverableApp>()
-        .toList();
+    final apps = <DiscoverableApp>[];
+    Uri? uri = Uri.parse('$_baseUrl/apps?limit=200');
+    var pageCount = 0;
+    while (uri != null && pageCount < 50) {
+      pageCount++;
+      final body = await _getJson(uri, token);
+
+      final data = (body['data'] as List<dynamic>?) ?? const [];
+      apps.addAll(
+        data
+            .whereType<Map<String, dynamic>>()
+            .map(_toDiscoverableApp)
+            .whereType<DiscoverableApp>(),
+      );
+
+      final links = body['links'] as Map<String, dynamic>?;
+      final next = links?['next'] as String?;
+      uri = (next == null || next.isEmpty) ? null : Uri.parse(next);
+    }
+    return apps;
   }
 
   /// アプリの最新バージョンの審査状態を取得する（GET /v1/apps?filter[bundleId]=

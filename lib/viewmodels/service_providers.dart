@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/app_store_connect_service.dart';
 import '../services/checklist_service.dart';
 import '../services/local_store_service.dart';
+import '../services/notification_service.dart';
 import '../services/play_console_service.dart';
 import '../services/revenue_cat_oauth_service.dart';
 import '../services/revenue_cat_service.dart';
@@ -30,6 +31,12 @@ final playConsoleServiceProvider = Provider<PlayConsoleService>(
 
 final checklistServiceProvider =
     Provider<ChecklistService>((ref) => const ChecklistService());
+
+/// main()でinitialize()を呼ぶ想定の実体。テストでは必ずFakeNotificationServiceへ
+/// overrideWithValueすること(実プラグインはプラットフォームチャネル呼び出しが
+/// 発生しflutter test環境では動作しない)。
+final notificationServiceProvider =
+    Provider<NotificationService>((ref) => LocalNotificationService());
 
 final revenueCatOAuthServiceProvider = Provider<RevenueCatOAuthService>(
   (ref) => RevenueCatOAuthService(

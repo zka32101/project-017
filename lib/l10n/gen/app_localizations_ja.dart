@@ -385,6 +385,44 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get settingsRevenueCatLabel => 'RevenueCat連携';
+
+  @override
+  String get settingsRevenueCatConnected => '接続済み';
+
+  @override
+  String get settingsRevenueCatNotConnected => '未接続（売上・DL数はサンプルデータのまま）';
+
+  @override
+  String get settingsRevenueCatConnectButton => '接続する';
+
+  @override
+  String get settingsRevenueCatDisconnectButton => '切断';
+
+  @override
+  String get settingsRevenueCatConnectHint =>
+      'RevenueCatダッシュボードでOAuthアプリを作成し、リダイレクトURIに ririkan://revenuecat-oauth-callback を登録してください。取得したClient ID / Client Secretを入力すると、ブラウザで認可画面が開きます。';
+
+  @override
+  String get settingsRevenueCatClientIdLabel => 'Client ID';
+
+  @override
+  String get settingsRevenueCatClientSecretLabel => 'Client Secret';
+
+  @override
+  String get settingsRevenueCatConnectSubmit => '接続';
+
+  @override
+  String settingsRevenueCatConnectFailed(String error) {
+    return '接続に失敗しました: $error';
+  }
+
+  @override
+  String settingsRevenueCatDisconnectFailed(String error) {
+    return '切断に失敗しました: $error';
+  }
+
+  @override
   String get reviewStatusWaitingReview => '審査待ち';
 
   @override

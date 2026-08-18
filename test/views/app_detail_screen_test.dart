@@ -8,7 +8,9 @@ import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/rejection_detail.dart';
 import 'package:ririkan/models/review_status_snapshot.dart';
 import 'package:ririkan/models/review_status_type.dart';
+import 'package:ririkan/models/revenue_summary.dart';
 import 'package:ririkan/router/app_router.dart';
+import 'package:ririkan/services/revenue_cat_service.dart';
 import 'package:ririkan/services/review_status_service.dart';
 import 'package:ririkan/services/service_result.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
@@ -49,6 +51,26 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
     ConnectedApp app,
   ) async =>
       const ServiceFailure(ServiceFailureReason.crashSummaries);
+}
+
+/// RevenueCatService.fetchRevenueSummaryは実RevenueCat連携(未接続なら
+/// ServiceFailure)になったため、ウィジェットテストでは固定成功データを
+/// 返すフェイクへ差し替える。
+class _FakeConnectedRevenueCatService extends RevenueCatService {
+  @override
+  Future<ServiceResult<List<RevenueSummary>>> fetchRevenueSummary(
+    ConnectedApp app, {
+    int days = 30,
+  }) async =>
+      ServiceSuccess([
+        RevenueSummary(
+          id: '${app.id}_rev_0',
+          connectedAppId: app.id,
+          date: DateTime(2026, 8, 5),
+          revenue: 800.0,
+          downloadCount: 15,
+        ),
+      ]);
 }
 
 void main() {
@@ -139,6 +161,7 @@ void main() {
         secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
         localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
         widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        revenueCatServiceProvider.overrideWithValue(_FakeConnectedRevenueCatService()),
       ],
     );
     addTearDown(container.dispose);

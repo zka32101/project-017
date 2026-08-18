@@ -64,6 +64,12 @@ dependencies:
   http: ^1.2.2
   dart_jsonwebtoken: ^2.14.0
 
+  # RevenueCat連携（売上・DL数、Should機能）: Charts & Metrics APIはOAuth 2.0
+  # (Authorization Code + PKCE)必須のため、システムブラウザ経由の認可フローに
+  # flutter_web_auth_2、PKCEのcode_challenge(S256)算出にcryptoを使用する。
+  flutter_web_auth_2: ^4.1.0
+  crypto: ^3.0.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

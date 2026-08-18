@@ -37,6 +37,23 @@ class FakeSecureStorageService extends SecureStorageService {
   Future<void> deleteApiKey(String connectedAppId) async {
     _memory.remove(SecureStorageService.refKeyFor(connectedAppId));
   }
+
+  // writeValue/readValue/deleteValue はSecureStorageService本体では
+  // 実際のFlutterSecureStorage(プラットフォームチャネル)を直接叩くため、
+  // apiKey系と同じインメモリMapを使って上書きしないとflutter test環境で
+  // MissingPluginExceptionになる。
+  @override
+  Future<void> writeValue({required String key, required String value}) async {
+    _memory[key] = value;
+  }
+
+  @override
+  Future<String?> readValue(String key) async => _memory[key];
+
+  @override
+  Future<void> deleteValue(String key) async {
+    _memory.remove(key);
+  }
 }
 
 /// load()/loadChecklist()に固定の初期値を差し込める、永続化なしのフェイク。

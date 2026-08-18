@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/build_failure_log.dart';
 import 'package:ririkan/models/connected_app.dart';
+import 'package:ririkan/models/crash_summary.dart';
 import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/rejection_detail.dart';
@@ -41,6 +42,12 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
     List<String> knownPackageNames = const [],
   }) async =>
       const ServiceFailure(ServiceFailureReason.appDiscovery);
+
+  @override
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
+    ConnectedApp app,
+  ) async =>
+      const ServiceFailure(ServiceFailureReason.crashSummaries);
 }
 
 void main() {
@@ -50,6 +57,10 @@ void main() {
         secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
         localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
         widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        // AppStoreConnectService.fetchReviewStatusは実API接続になっているため、
+        // 実ネットワーク呼び出しで失敗しないよう明示的にフェイクへ差し替える。
+        reviewStatusServiceProvider(PlatformType.ios)
+            .overrideWithValue(FakeReviewStatusService()),
       ],
     );
     addTearDown(container.dispose);

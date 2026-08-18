@@ -5,10 +5,17 @@
 // 例外になる。widget_test.dart や各viewmodelの単体テストと同じ理由で、
 // ここに集約したインメモリ/no-opのフェイクをProviderScopeのoverridesとして渡す。
 
+import 'package:ririkan/models/build_failure_log.dart';
 import 'package:ririkan/models/connected_app.dart';
+import 'package:ririkan/models/crash_summary.dart';
+import 'package:ririkan/models/discoverable_app.dart';
+import 'package:ririkan/models/rejection_detail.dart';
+import 'package:ririkan/models/review_status_snapshot.dart';
 import 'package:ririkan/models/submission_checklist_item.dart';
 import 'package:ririkan/services/local_store_service.dart';
+import 'package:ririkan/services/review_status_service.dart';
 import 'package:ririkan/services/secure_storage_service.dart';
+import 'package:ririkan/services/service_result.dart';
 import 'package:ririkan/services/widget_sync_service.dart';
 
 class FakeSecureStorageService extends SecureStorageService {
@@ -72,4 +79,57 @@ class FakeWidgetSyncService extends WidgetSyncService {
     required int attentionCount,
     required ConnectedApp? topAttentionApp,
   }) async {}
+}
+
+/// AppStoreConnectService/PlayConsoleServiceは今やdiscoverApps/
+/// fetchReviewStatusが実API接続になっているため、テスト用にダミーの
+/// registerApp(apiKey: 'k')等で登録したアプリに対して確定的な結果を
+/// 返すフェイクが必要になる箇所で使う（reviewStatusServiceProvider経由で
+/// オーバーライドする）。デフォルト値は元のMockDataServiceが返していた
+/// 値と同じにしてあり、既存テストのアサーションをそのまま使い回せる。
+class FakeReviewStatusService implements ReviewStatusService {
+  FakeReviewStatusService({
+    this.snapshot,
+    this.rejections = const [],
+    this.buildFailures = const [],
+    this.discoverableApps = const [],
+    this.crashSummaries = const [],
+  });
+
+  final ReviewStatusSnapshot? snapshot;
+  final List<RejectionDetail> rejections;
+  final List<BuildFailureLog> buildFailures;
+  final List<DiscoverableApp> discoverableApps;
+  final List<CrashSummary> crashSummaries;
+
+  @override
+  Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
+    ConnectedApp app,
+  ) async =>
+      ServiceSuccess(snapshot == null ? [] : [snapshot!]);
+
+  @override
+  Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
+    ConnectedApp app,
+  ) async =>
+      ServiceSuccess(rejections);
+
+  @override
+  Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
+    ConnectedApp app,
+  ) async =>
+      ServiceSuccess(buildFailures);
+
+  @override
+  Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
+    String apiKey, {
+    List<String> knownPackageNames = const [],
+  }) async =>
+      ServiceSuccess(discoverableApps);
+
+  @override
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
+    ConnectedApp app,
+  ) async =>
+      ServiceSuccess(crashSummaries);
 }

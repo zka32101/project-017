@@ -67,6 +67,7 @@
   "errorBuildFailureLogsFetchFailed": "Failed to fetch build failure logs",
   "errorRevenueFetchFailed": "Failed to fetch revenue summary",
   "errorAppDiscoveryFailed": "Failed to fetch the app list",
+  "errorCrashSummariesFetchFailed": "Failed to fetch crash data",
   "errorGeneric": "An error occurred",
 
   "checklistTitle": "Pre-Submission Checklist · {appName}",

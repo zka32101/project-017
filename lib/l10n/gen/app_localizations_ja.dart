@@ -207,6 +207,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get errorAppDiscoveryFailed => 'アプリ一覧の取得に失敗しました';
 
   @override
+  String get errorCrashSummariesFetchFailed => 'クラッシュ情報の取得に失敗しました';
+
+  @override
   String get errorGeneric => 'エラーが発生しました';
 
   @override

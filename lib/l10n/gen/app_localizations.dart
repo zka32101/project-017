@@ -464,6 +464,12 @@ abstract class AppLocalizations {
   /// **'アプリ一覧の取得に失敗しました'**
   String get errorAppDiscoveryFailed;
 
+  /// No description provided for @errorCrashSummariesFetchFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'クラッシュ情報の取得に失敗しました'**
+  String get errorCrashSummariesFetchFailed;
+
   /// No description provided for @errorGeneric.
   ///
   /// In ja, this message translates to:

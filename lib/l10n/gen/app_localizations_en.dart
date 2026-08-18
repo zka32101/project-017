@@ -217,6 +217,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorAppDiscoveryFailed => 'Failed to fetch the app list';
 
   @override
+  String get errorCrashSummariesFetchFailed => 'Failed to fetch crash data';
+
+  @override
   String get errorGeneric => 'An error occurred';
 
   @override

@@ -90,6 +90,7 @@
   "errorBuildFailureLogsFetchFailed": "ビルド失敗ログの取得に失敗しました",
   "errorRevenueFetchFailed": "売上サマリーの取得に失敗しました",
   "errorAppDiscoveryFailed": "アプリ一覧の取得に失敗しました",
+  "errorCrashSummariesFetchFailed": "クラッシュ情報の取得に失敗しました",
   "errorGeneric": "エラーが発生しました",
 
   "checklistTitle": "提出前チェックリスト・{appName}",

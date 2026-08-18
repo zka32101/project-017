@@ -1,21 +1,55 @@
+import '../constants/demo_app_ids.dart';
 import '../models/build_failure_log.dart';
 import '../models/connected_app.dart';
+import '../models/crash_summary.dart';
 import '../models/discoverable_app.dart';
 import '../models/rejection_detail.dart';
 import '../models/review_status_snapshot.dart';
+import 'android_publisher_api_client.dart';
 import 'mock_data_service.dart';
+import 'play_developer_reporting_api_client.dart';
 import 'review_status_service.dart';
+import 'secure_storage_service.dart';
 import 'service_result.dart';
 
-/// Android: MVPはPlay Developer APIポーリング方式（Pub/Sub未実装、条件1準拠）。
-/// ポーリング間隔はRemote Configで調整可能にする設計（defaultPollIntervalはプレースホルダー）。
+/// Android: Google Play Developer API 実接続。
+///
+/// - discoverApps(): Play Developer APIには「アカウント配下の全アプリを一覧
+///   取得する」公式エンドポイントが存在しない(Discovery Documentで確認済み、
+///   既知のpackageNameに対する操作しかできない)。そのためHTTP通信は行わず、
+///   ユーザーが直接入力したパッケージ名からその場でDiscoverableAppを組み立てる。
+/// - fetchReviewStatus(): サービスアカウントJWTでOAuth2アクセストークンを取得し、
+///   Edit作成→トラック一覧取得で最新リリースの状態(status)を実際に取得する。
+///   ただしPlay Developer APIには「ポリシー審査中/リジェクト」を明示する
+///   フィールドが公式には無いため、リリースの進行状況(draft/inProgress/
+///   halted/completed)を近似値として扱う。
+/// - fetchRejectionDetails() / fetchBuildFailureLogs(): 現状モックのまま。
+///   Play Developer APIにはポリシー審査のリジェクト理由本文や、ビルド失敗の
+///   詳細ログを取得する公開エンドポイントが存在しないため。
+/// - fetchCrashSummaries(): Play Developer Reporting API
+///   (vitals.crashrate.query、androidpublisherとは別ホスト・別OAuthスコープ)
+///   から日次クラッシュ率を実際に取得する。詳細はPlayDeveloperReportingApiClient
+///   のドキュメントコメントを参照。
+///
+/// デモアプリ(lib/constants/demo_app_ids.dart)は実際のAPI認証情報を持たない
+/// ため、これらのIDに対しては常にMockDataServiceのデータを返す。
 class PlayConsoleService implements ReviewStatusService {
   PlayConsoleService({
+    required SecureStorageService secureStorageService,
     MockDataService mockDataService = const MockDataService(),
     this.pollInterval = const Duration(minutes: 15),
-  }) : _mock = mockDataService;
+    AndroidPublisherApiClient? apiClient,
+    PlayDeveloperReportingApiClient? reportingApiClient,
+  })  : _secureStorage = secureStorageService,
+        _mock = mockDataService,
+        _apiClient = apiClient ?? AndroidPublisherApiClient(),
+        _reportingApiClient =
+            reportingApiClient ?? PlayDeveloperReportingApiClient();
 
+  final SecureStorageService _secureStorage;
   final MockDataService _mock;
+  final AndroidPublisherApiClient _apiClient;
+  final PlayDeveloperReportingApiClient _reportingApiClient;
 
   /// Remote Config「ポーリング間隔」の初期値。実運用ではRemoteConfigServiceから注入する。
   final Duration pollInterval;
@@ -24,9 +58,20 @@ class PlayConsoleService implements ReviewStatusService {
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
     ConnectedApp app,
   ) async {
+    if (app.id == demoAndroidAppId) {
+      return ServiceSuccess(_mock.reviewStatusesFor(app.id, app.platform));
+    }
     try {
-      final data = _mock.reviewStatusesFor(app.id, app.platform);
-      return ServiceSuccess(data);
+      final credential = await _secureStorage.readApiKey(app.id);
+      if (credential == null || credential.isEmpty) {
+        return const ServiceFailure(ServiceFailureReason.reviewStatus);
+      }
+      final snapshot = await _apiClient.fetchLatestReviewStatus(
+        serviceAccountJson: credential,
+        packageName: app.bundleIdOrPackageName,
+        connectedAppId: app.id,
+      );
+      return ServiceSuccess(snapshot == null ? [] : [snapshot]);
     } catch (e) {
       return ServiceFailure(ServiceFailureReason.reviewStatus, cause: e);
     }
@@ -51,6 +96,29 @@ class PlayConsoleService implements ReviewStatusService {
       return ServiceSuccess(_mock.buildFailuresFor(app.id, app.platform));
     } catch (e) {
       return ServiceFailure(ServiceFailureReason.buildFailureLogs, cause: e);
+    }
+  }
+
+  @override
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
+    ConnectedApp app,
+  ) async {
+    if (app.id == demoAndroidAppId) {
+      return ServiceSuccess(_mock.crashSummariesFor(app.id));
+    }
+    try {
+      final credential = await _secureStorage.readApiKey(app.id);
+      if (credential == null || credential.isEmpty) {
+        return const ServiceFailure(ServiceFailureReason.crashSummaries);
+      }
+      final summaries = await _reportingApiClient.fetchCrashSummaries(
+        serviceAccountJson: credential,
+        packageName: app.bundleIdOrPackageName,
+        connectedAppId: app.id,
+      );
+      return ServiceSuccess(summaries);
+    } catch (e) {
+      return ServiceFailure(ServiceFailureReason.crashSummaries, cause: e);
     }
   }
 

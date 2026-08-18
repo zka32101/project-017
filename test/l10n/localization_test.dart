@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/l10n/gen/app_localizations.dart';
 import 'package:ririkan/models/platform_type.dart';
+import 'package:ririkan/models/review_status_snapshot.dart';
+import 'package:ririkan/models/review_status_type.dart';
 import 'package:ririkan/router/app_router.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
 import 'package:ririkan/viewmodels/service_providers.dart';
@@ -55,6 +57,19 @@ void main() {
         secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
         localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
         widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        // AppStoreConnectService.fetchReviewStatusは実API接続になっているため、
+        // 以前のMockDataServiceと同じ値(iOS: 審査中)を返すフェイクへ差し替える。
+        reviewStatusServiceProvider(PlatformType.ios).overrideWithValue(
+          FakeReviewStatusService(
+            snapshot: ReviewStatusSnapshot(
+              id: 'fake_snap1',
+              connectedAppId: 'unused',
+              versionString: '1.4.0',
+              statusType: ReviewStatusType.inReview,
+              fetchedAt: DateTime(2026, 8, 5),
+            ),
+          ),
+        ),
       ],
     );
     addTearDown(container.dispose);

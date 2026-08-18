@@ -53,6 +53,11 @@ void main() {
         localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
         widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
         exportServiceProvider.overrideWithValue(const _FakeExportService()),
+        // AppStoreConnectService.fetchReviewStatusは実API接続になっているため、
+        // エクスポート対象の審査履歴プリフェッチが実ネットワーク呼び出しで
+        // 失敗しないよう明示的にフェイクへ差し替える。
+        reviewStatusServiceProvider(PlatformType.ios)
+            .overrideWithValue(FakeReviewStatusService()),
       ],
     );
     addTearDown(container.dispose);

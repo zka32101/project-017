@@ -1,5 +1,6 @@
 import '../models/build_failure_log.dart';
 import '../models/connected_app.dart';
+import '../models/crash_summary.dart';
 import '../models/discoverable_app.dart';
 import '../models/rejection_detail.dart';
 import '../models/review_status_snapshot.dart';
@@ -21,6 +22,16 @@ abstract class ReviewStatusService {
   );
 
   Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
+    ConnectedApp app,
+  );
+
+  /// クラッシュ率の日次推移を取得する。
+  ///
+  /// 注意: Apple公式のApp Store Connect APIにはクラッシュ率を取得できる
+  /// 公開エンドポイントが存在しないため、iOS実装(AppStoreConnectService)は
+  /// 引き続きMockDataServiceのデータを返す。Android実装(PlayConsoleService)は
+  /// Play Developer Reporting API(vitals.crashrate.query)による実データを返す。
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
     ConnectedApp app,
   );
 

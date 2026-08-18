@@ -6,16 +6,23 @@ import '../models/crash_summary.dart';
 import '../models/rejection_detail.dart';
 import '../models/review_status_snapshot.dart';
 import '../models/revenue_summary.dart';
-import '../services/mock_data_service.dart';
 import '../services/service_result.dart';
 import 'service_providers.dart';
 
-/// アプリ詳細画面: クラッシュ推移タブ（Firebase Crashlytics連携、Must#3）。
-/// MVP段階はモックデータ、実接続はCrashlyticsService実装時に置き換える。
+/// アプリ詳細画面: クラッシュ推移タブ。
+/// Android: Play Developer Reporting API による実データ。
+/// iOS: Apple公式には公開エンドポイントが無いためMockDataServiceのまま
+/// (詳細はAppStoreConnectServiceのドキュメントコメントを参照)。
 final crashSummariesProvider =
     FutureProvider.family<List<CrashSummary>, ConnectedApp>((ref, app) async {
-  const mock = MockDataService();
-  return mock.crashSummariesFor(app.id);
+  final service = ref.watch(reviewStatusServiceProvider(app.platform));
+  final result = await service.fetchCrashSummaries(app);
+  switch (result) {
+    case ServiceSuccess<List<CrashSummary>>(:final data):
+      return data;
+    case ServiceFailure<List<CrashSummary>> failure:
+      throw ServiceFailureException(failure);
+  }
 });
 
 /// アプリ詳細画面: 売上・DL数サマリータブ（Should機能、RevenueCat連携）

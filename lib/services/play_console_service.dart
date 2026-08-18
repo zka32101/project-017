@@ -1,11 +1,13 @@
 import '../constants/demo_app_ids.dart';
 import '../models/build_failure_log.dart';
 import '../models/connected_app.dart';
+import '../models/crash_summary.dart';
 import '../models/discoverable_app.dart';
 import '../models/rejection_detail.dart';
 import '../models/review_status_snapshot.dart';
 import 'android_publisher_api_client.dart';
 import 'mock_data_service.dart';
+import 'play_developer_reporting_api_client.dart';
 import 'review_status_service.dart';
 import 'secure_storage_service.dart';
 import 'service_result.dart';
@@ -24,6 +26,10 @@ import 'service_result.dart';
 /// - fetchRejectionDetails() / fetchBuildFailureLogs(): 現状モックのまま。
 ///   Play Developer APIにはポリシー審査のリジェクト理由本文や、ビルド失敗の
 ///   詳細ログを取得する公開エンドポイントが存在しないため。
+/// - fetchCrashSummaries(): Play Developer Reporting API
+///   (vitals.crashrate.query、androidpublisherとは別ホスト・別OAuthスコープ)
+///   から日次クラッシュ率を実際に取得する。詳細はPlayDeveloperReportingApiClient
+///   のドキュメントコメントを参照。
 ///
 /// デモアプリ(lib/constants/demo_app_ids.dart)は実際のAPI認証情報を持たない
 /// ため、これらのIDに対しては常にMockDataServiceのデータを返す。
@@ -33,13 +39,17 @@ class PlayConsoleService implements ReviewStatusService {
     MockDataService mockDataService = const MockDataService(),
     this.pollInterval = const Duration(minutes: 15),
     AndroidPublisherApiClient? apiClient,
+    PlayDeveloperReportingApiClient? reportingApiClient,
   })  : _secureStorage = secureStorageService,
         _mock = mockDataService,
-        _apiClient = apiClient ?? AndroidPublisherApiClient();
+        _apiClient = apiClient ?? AndroidPublisherApiClient(),
+        _reportingApiClient =
+            reportingApiClient ?? PlayDeveloperReportingApiClient();
 
   final SecureStorageService _secureStorage;
   final MockDataService _mock;
   final AndroidPublisherApiClient _apiClient;
+  final PlayDeveloperReportingApiClient _reportingApiClient;
 
   /// Remote Config「ポーリング間隔」の初期値。実運用ではRemoteConfigServiceから注入する。
   final Duration pollInterval;
@@ -86,6 +96,29 @@ class PlayConsoleService implements ReviewStatusService {
       return ServiceSuccess(_mock.buildFailuresFor(app.id, app.platform));
     } catch (e) {
       return ServiceFailure(ServiceFailureReason.buildFailureLogs, cause: e);
+    }
+  }
+
+  @override
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
+    ConnectedApp app,
+  ) async {
+    if (app.id == demoAndroidAppId) {
+      return ServiceSuccess(_mock.crashSummariesFor(app.id));
+    }
+    try {
+      final credential = await _secureStorage.readApiKey(app.id);
+      if (credential == null || credential.isEmpty) {
+        return const ServiceFailure(ServiceFailureReason.crashSummaries);
+      }
+      final summaries = await _reportingApiClient.fetchCrashSummaries(
+        serviceAccountJson: credential,
+        packageName: app.bundleIdOrPackageName,
+        connectedAppId: app.id,
+      );
+      return ServiceSuccess(summaries);
+    } catch (e) {
+      return ServiceFailure(ServiceFailureReason.crashSummaries, cause: e);
     }
   }
 

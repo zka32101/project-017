@@ -1,6 +1,7 @@
 import '../constants/demo_app_ids.dart';
 import '../models/build_failure_log.dart';
 import '../models/connected_app.dart';
+import '../models/crash_summary.dart';
 import '../models/discoverable_app.dart';
 import '../models/rejection_detail.dart';
 import '../models/review_status_snapshot.dart';
@@ -15,12 +16,13 @@ import 'service_result.dart';
 /// - discoverApps(): GET /v1/apps でアカウント配下の全アプリを実際に取得する。
 /// - fetchReviewStatus(): GET /v1/apps/{id}/appStoreVersions で最新バージョンの
 ///   審査状態(appStoreState)を実際に取得する。
-/// - fetchRejectionDetails() / fetchBuildFailureLogs(): 現状モックのまま。
-///   Apple公式のApp Store Connect APIには、Resolution Centerのリジェクト理由
-///   本文や、ビルド失敗の詳細ログを取得する公開エンドポイントが存在しない
-///   (非公式・非公開の内部API(fastlane/spaceshipが使う"iris"等)を使えば
-///   不可能ではないが、ドキュメント化されておらず予告なく変更・遮断される
-///   リスクがあるため、公式に対応方法が用意されるまでは実装しない)。
+/// - fetchRejectionDetails() / fetchBuildFailureLogs() / fetchCrashSummaries():
+///   現状モックのまま。Apple公式のApp Store Connect APIには、Resolution
+///   Centerのリジェクト理由本文や、ビルド失敗の詳細ログ、クラッシュ率を
+///   取得する公開エンドポイントが存在しない(非公式・非公開の内部API
+///   (fastlane/spaceshipが使う"iris"等)を使えば不可能ではないが、
+///   ドキュメント化されておらず予告なく変更・遮断されるリスクがあるため、
+///   公式に対応方法が用意されるまでは実装しない)。
 ///
 /// デモアプリ(lib/constants/demo_app_ids.dart)は実際のAPI認証情報を持たない
 /// ため、これらのIDに対しては常にMockDataServiceのデータを返す。
@@ -79,6 +81,17 @@ class AppStoreConnectService implements ReviewStatusService {
       return ServiceSuccess(_mock.buildFailuresFor(app.id, app.platform));
     } catch (e) {
       return ServiceFailure(ServiceFailureReason.buildFailureLogs, cause: e);
+    }
+  }
+
+  @override
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
+    ConnectedApp app,
+  ) async {
+    try {
+      return ServiceSuccess(_mock.crashSummariesFor(app.id));
+    } catch (e) {
+      return ServiceFailure(ServiceFailureReason.crashSummaries, cause: e);
     }
   }
 

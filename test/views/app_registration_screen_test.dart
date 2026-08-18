@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:ririkan/models/build_failure_log.dart';
 import 'package:ririkan/models/connected_app.dart';
+import 'package:ririkan/models/crash_summary.dart';
 import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/rejection_detail.dart';
@@ -58,6 +59,12 @@ class _FakeAppStoreConnectService implements ReviewStatusService {
     lastApiKey = apiKey;
     return ServiceSuccess(response);
   }
+
+  @override
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
+    ConnectedApp app,
+  ) async =>
+      const ServiceSuccess([]);
 }
 
 /// テスト用のダミーRSA秘密鍵(PKCS#8 PEM)。実在のGoogleサービスアカウントでは

@@ -7,6 +7,7 @@
 
 import 'package:ririkan/models/build_failure_log.dart';
 import 'package:ririkan/models/connected_app.dart';
+import 'package:ririkan/models/crash_summary.dart';
 import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/rejection_detail.dart';
 import 'package:ririkan/models/review_status_snapshot.dart';
@@ -92,12 +93,14 @@ class FakeReviewStatusService implements ReviewStatusService {
     this.rejections = const [],
     this.buildFailures = const [],
     this.discoverableApps = const [],
+    this.crashSummaries = const [],
   });
 
   final ReviewStatusSnapshot? snapshot;
   final List<RejectionDetail> rejections;
   final List<BuildFailureLog> buildFailures;
   final List<DiscoverableApp> discoverableApps;
+  final List<CrashSummary> crashSummaries;
 
   @override
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
@@ -123,4 +126,10 @@ class FakeReviewStatusService implements ReviewStatusService {
     List<String> knownPackageNames = const [],
   }) async =>
       ServiceSuccess(discoverableApps);
+
+  @override
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
+    ConnectedApp app,
+  ) async =>
+      ServiceSuccess(crashSummaries);
 }

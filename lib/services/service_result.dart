@@ -18,6 +18,7 @@ enum ServiceFailureReason {
   buildFailureLogs,
   revenueSummary,
   appDiscovery,
+  crashSummaries,
 }
 
 class ServiceFailure<T> extends ServiceResult<T> {

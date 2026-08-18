@@ -154,10 +154,17 @@
   "notificationPromptAllow": "通知を許可する",
   "notificationPromptLater": "あとで",
 
-  "paywallTitle": "3本目のアプリを管理するには",
-  "paywallBody": "Pro プランでアプリ登録数が無制限になります。\nプッシュ通知即時化・ウィジェット・チーム共有も利用可能です。\n¥600/月 または ¥5,000/年",
-  "paywallUpgrade": "Pro にアップグレード",
+  "paywallTitle": "広告を消しませんか？",
+  "paywallBody": "月額料金だけで、アプリ内の広告表示を全て非表示にできます。",
+  "paywallPriceLabel": "{price} / 月で広告を消す",
+  "@paywallPriceLabel": {
+    "placeholders": {"price": {"type": "String"}}
+  },
+  "paywallUpgrade": "広告を消す",
+  "paywallUnavailable": "現在ご利用いただけません。しばらくしてから再度お試しください。",
+  "paywallRestore": "購入を復元",
   "paywallLater": "あとで",
+  "dashboardRemoveAds": "広告を消す",
 
   "initialScanMessage": "登録したアプリの状態を確認しています…",
   "initialScanSubMessage": "管制塔が起動しています",
@@ -165,8 +172,8 @@
 
   "settingsTitle": "設定",
   "settingsPlanLabel": "プラン",
-  "settingsPlanPro": "Pro（無制限）",
-  "settingsPlanFree": "Free（2アプリまで）",
+  "settingsPlanPro": "広告なし",
+  "settingsPlanFree": "広告あり",
   "settingsAppsManagementLabel": "登録アプリ管理",
   "settingsAppsCount": "{count}件登録中",
   "@settingsAppsCount": {

@@ -1,13 +1,39 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:ririkan/models/connected_app.dart';
 import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/user_plan.dart';
 import 'package:ririkan/services/local_store_service.dart';
+import 'package:ririkan/services/purchase_service.dart';
 import 'package:ririkan/services/secure_storage_service.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
 import 'package:ririkan/viewmodels/service_providers.dart';
+
+/// appBootstrapProviderが「広告を消す」エンタイトルメント状態を確認する際に
+/// 実PurchaseService(purchases_flutterのプラットフォームチャネル)へ触れない
+/// ようにするフェイク。
+class _FakePurchaseService implements PurchaseService {
+  _FakePurchaseService({this.adsRemoved = false});
+
+  final bool adsRemoved;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<bool> isAdsRemoved() async => adsRemoved;
+
+  @override
+  Future<Package?> getRemoveAdsPackage() async => null;
+
+  @override
+  Future<bool> purchaseRemoveAds(Package package) async => false;
+
+  @override
+  Future<bool> restorePurchases() async => adsRemoved;
+}
 
 /// registerApp/reorder/removeApp が内部で呼ぶ永続化(_persist)がpath_providerの
 /// プラットフォームチャネルに触れないようにするフェイク。このファイルは
@@ -179,40 +205,6 @@ void main() {
       expect(state[0].sortOrder, 0);
       expect(state[1].sortOrder, 1);
       expect(state[1].hasApiKeyRegistered, isTrue);
-    });
-  });
-
-  group('ConnectedAppsNotifier.wouldHitPaywall', () {
-    // 課金は一時的に無効化中（ユーザー指示）。2アプリ登録済み(無料プラン上限)で
-    // あっても常にfalseを返すことを確認する。再度有効化する際は、この
-    // テストも「無料プランは2アプリ登録済みで3本目登録時にペイウォールに達する」
-    // というisTrue期待に戻すこと。
-    test('課金無効化中は無料プランで上限を超えてもペイウォールに達しない', () async {
-      final notifier = container.read(connectedAppsProvider.notifier);
-      for (var i = 0; i < 2; i++) {
-        await notifier.registerApp(
-          userId: 'u1',
-          platform: PlatformType.ios,
-          bundleIdOrPackageName: 'works.petit.app$i',
-          displayName: 'App$i',
-          apiKey: 'key$i',
-        );
-      }
-      expect(notifier.wouldHitPaywall(UserPlan.free), isFalse);
-    });
-
-    test('Proプランはペイウォールに達しない', () async {
-      final notifier = container.read(connectedAppsProvider.notifier);
-      for (var i = 0; i < 5; i++) {
-        await notifier.registerApp(
-          userId: 'u1',
-          platform: PlatformType.ios,
-          bundleIdOrPackageName: 'works.petit.app$i',
-          displayName: 'App$i',
-          apiKey: 'key$i',
-        );
-      }
-      expect(notifier.wouldHitPaywall(UserPlan.pro), isFalse);
     });
   });
 
@@ -491,6 +483,10 @@ void main() {
         overrides: [
           secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
           localStoreServiceProvider.overrideWithValue(spy),
+          // 「広告を消す」エンタイトルメントが有効な状態を再現し、appBootstrapProvider
+          // 側のプラン補正によって復元したUserPlan.proがfreeへ巻き戻らないようにする。
+          purchaseServiceProvider
+              .overrideWithValue(_FakePurchaseService(adsRemoved: true)),
         ],
       );
       addTearDown(spyContainer.dispose);
@@ -512,6 +508,8 @@ void main() {
         overrides: [
           secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
           localStoreServiceProvider.overrideWithValue(spy),
+          purchaseServiceProvider
+              .overrideWithValue(_FakePurchaseService(adsRemoved: true)),
         ],
       );
       addTearDown(spyContainer.dispose);

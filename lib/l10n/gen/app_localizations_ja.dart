@@ -337,17 +337,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationPromptLater => 'あとで';
 
   @override
-  String get paywallTitle => '3本目のアプリを管理するには';
+  String get paywallTitle => '広告を消しませんか？';
 
   @override
-  String get paywallBody =>
-      'Pro プランでアプリ登録数が無制限になります。\nプッシュ通知即時化・ウィジェット・チーム共有も利用可能です。\n¥600/月 または ¥5,000/年';
+  String get paywallBody => '月額料金だけで、アプリ内の広告表示を全て非表示にできます。';
 
   @override
-  String get paywallUpgrade => 'Pro にアップグレード';
+  String paywallPriceLabel(String price) {
+    return '$price / 月で広告を消す';
+  }
+
+  @override
+  String get paywallUpgrade => '広告を消す';
+
+  @override
+  String get paywallUnavailable => '現在ご利用いただけません。しばらくしてから再度お試しください。';
+
+  @override
+  String get paywallRestore => '購入を復元';
 
   @override
   String get paywallLater => 'あとで';
+
+  @override
+  String get dashboardRemoveAds => '広告を消す';
 
   @override
   String get initialScanMessage => '登録したアプリの状態を確認しています…';
@@ -365,10 +378,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsPlanLabel => 'プラン';
 
   @override
-  String get settingsPlanPro => 'Pro（無制限）';
+  String get settingsPlanPro => '広告なし';
 
   @override
-  String get settingsPlanFree => 'Free（2アプリまで）';
+  String get settingsPlanFree => '広告あり';
 
   @override
   String get settingsAppsManagementLabel => '登録アプリ管理';

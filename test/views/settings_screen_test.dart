@@ -172,4 +172,25 @@ void main() {
 
     expect(find.text('未接続（売上・DL数はサンプルデータのまま）'), findsOneWidget);
   });
+
+  testWidgets('無料プラン(広告あり)の場合、「広告を消す」ボタンからペイウォールへ遷移できる',
+      (tester) async {
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/settings');
+    await tester.pumpAndSettle();
+
+    expect(find.text('広告あり'), findsOneWidget);
+    expect(find.text('広告を消す'), findsOneWidget);
+
+    await tester.tap(find.text('広告を消す'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('広告を消しませんか？'), findsOneWidget);
+  });
 }

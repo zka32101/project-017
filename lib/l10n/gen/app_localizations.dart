@@ -695,26 +695,50 @@ abstract class AppLocalizations {
   /// No description provided for @paywallTitle.
   ///
   /// In ja, this message translates to:
-  /// **'3本目のアプリを管理するには'**
+  /// **'広告を消しませんか？'**
   String get paywallTitle;
 
   /// No description provided for @paywallBody.
   ///
   /// In ja, this message translates to:
-  /// **'Pro プランでアプリ登録数が無制限になります。\nプッシュ通知即時化・ウィジェット・チーム共有も利用可能です。\n¥600/月 または ¥5,000/年'**
+  /// **'月額料金だけで、アプリ内の広告表示を全て非表示にできます。'**
   String get paywallBody;
+
+  /// No description provided for @paywallPriceLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'{price} / 月で広告を消す'**
+  String paywallPriceLabel(String price);
 
   /// No description provided for @paywallUpgrade.
   ///
   /// In ja, this message translates to:
-  /// **'Pro にアップグレード'**
+  /// **'広告を消す'**
   String get paywallUpgrade;
+
+  /// No description provided for @paywallUnavailable.
+  ///
+  /// In ja, this message translates to:
+  /// **'現在ご利用いただけません。しばらくしてから再度お試しください。'**
+  String get paywallUnavailable;
+
+  /// No description provided for @paywallRestore.
+  ///
+  /// In ja, this message translates to:
+  /// **'購入を復元'**
+  String get paywallRestore;
 
   /// No description provided for @paywallLater.
   ///
   /// In ja, this message translates to:
   /// **'あとで'**
   String get paywallLater;
+
+  /// No description provided for @dashboardRemoveAds.
+  ///
+  /// In ja, this message translates to:
+  /// **'広告を消す'**
+  String get dashboardRemoveAds;
 
   /// No description provided for @initialScanMessage.
   ///
@@ -749,13 +773,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsPlanPro.
   ///
   /// In ja, this message translates to:
-  /// **'Pro（無制限）'**
+  /// **'広告なし'**
   String get settingsPlanPro;
 
   /// No description provided for @settingsPlanFree.
   ///
   /// In ja, this message translates to:
-  /// **'Free（2アプリまで）'**
+  /// **'広告あり'**
   String get settingsPlanFree;
 
   /// No description provided for @settingsAppsManagementLabel.

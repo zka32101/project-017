@@ -3,15 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/gen/app_localizations.dart';
 import 'router/app_router.dart';
+import 'services/ad_service.dart';
 import 'services/notification_service.dart';
+import 'services/purchase_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
-  // 通知プラグインの初期化はmain()で1回だけ行う(Widget buildからは呼ばない。
-  // flutter test環境ではnotificationServiceProviderを必ずフェイクへ
-  // overrideするため、この初期化コード自体がテストで実行されることはない)。
+  // 各種プラグインの初期化はmain()で1回だけ行う(Widget buildからは呼ばない。
+  // flutter test環境では対応するproviderを必ずフェイクへoverrideするため、
+  // この初期化コード自体がテストで実行されることはない)。
   WidgetsFlutterBinding.ensureInitialized();
   await LocalNotificationService().initialize();
+  await const AdService().initialize();
+  await RevenueCatPurchaseService().initialize();
   runApp(const ProviderScope(child: RirikanApp()));
 }
 

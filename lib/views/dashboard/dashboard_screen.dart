@@ -6,9 +6,11 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../l10n/service_failure_l10n.dart';
 import '../../models/connected_app.dart';
 import '../../models/platform_type.dart';
+import '../../models/user_plan.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
 import '../../viewmodels/dashboard_providers.dart';
+import '../../viewmodels/service_providers.dart';
 import '../../viewmodels/widget_sync_provider.dart';
 
 /// ダッシュボード(Aha Moment): 登録アプリの現在状態が一覧表示される瞬間。
@@ -103,16 +105,36 @@ class DashboardScreen extends ConsumerWidget {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          final notifier = ref.read(connectedAppsProvider.notifier);
-          if (notifier.wouldHitPaywall(plan)) {
-            context.push('/paywall');
-          } else {
-            context.push('/app-registration');
-          }
-        },
+        onPressed: () => context.push('/app-registration'),
         icon: const Icon(Icons.add),
         label: Text(l10n.dashboardAddApp),
+      ),
+      bottomNavigationBar: plan == UserPlan.free
+          ? _AdBannerBar(l10n: l10n)
+          : null,
+    );
+  }
+}
+
+/// 無料ユーザー向けのバナー広告表示エリア。「広告を消す」への導線も兼ねる。
+class _AdBannerBar extends ConsumerWidget {
+  final AppLocalizations l10n;
+  const _AdBannerBar({required this.l10n});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final adBannerBuilder = ref.watch(adBannerWidgetBuilderProvider);
+    return SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () => context.push('/paywall'),
+            child: Text(l10n.dashboardRemoveAds),
+          ),
+          adBannerBuilder(context),
+        ],
       ),
     );
   }

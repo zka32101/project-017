@@ -10,7 +10,8 @@ import '../services/local_store_service.dart';
 import 'service_providers.dart';
 
 /// 登録済みアプリ一覧の状態管理（Must#5: アプリ登録・並び替え）。
-/// 無料プランは2アプリまで（3本目でペイウォール、設計書 Step3.5 R④）。
+/// アプリ登録数に上限は無い（マネタイズは広告表示＋月$1での広告非表示、
+/// UserPlan参照）。
 class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
   /// initializeDemoAppsIfNeeded の多重実行防止用（複数箇所から並行して
   /// 呼ばれても、実際の登録処理は1回しか走らないようにする）。
@@ -103,7 +104,7 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
     state = apps;
   }
 
-  /// プラン変更（ペイウォールでのアップグレード等）をuserPlanProviderへ反映しつつ、
+  /// プラン変更（「広告を消す」購入・復元等）をuserPlanProviderへ反映しつつ、
   /// 永続化もあわせて行う。paywall_screen.dart等はこのメソッド経由で変更すること
   /// （userPlanProvider.notifier.state を直接書き換えると永続化されない）。
   Future<void> setPlan(UserPlan plan) async {
@@ -116,15 +117,6 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
           LocalState(apps: state, plan: ref.read(userPlanProvider)),
         );
   }
-
-  /// 課金は一時的に無効化中（ユーザー指示）。UserPlan/PaywallScreen/`/paywall`
-  /// ルート自体は温存し、このゲートだけを常にfalseにして無効化している。
-  /// また、まとめて取得（registerAppsBulk）は1回の操作で無料プラン上限を
-  /// 一気に超えうるため、「1件登録するたびにゲートを見る」という従来の設計は
-  /// アプリ単位の登録を前提にしたものであり、一括登録フローとも整合しない。
-  /// 再度有効化する場合は元の判定
-  /// (`plan == UserPlan.free && state.length >= UserPlan.freeAppLimit`)に戻すこと。
-  bool wouldHitPaywall(UserPlan plan) => false;
 
   /// デモアプリの固定ID（lib/constants/demo_app_ids.dart）。乱数（uuid）にすると、
   /// 状態がインメモリのみで永続化されていない現状、起動のたびに新しいIDで
@@ -218,14 +210,27 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
 
   if (saved != null) {
     ref.read(userPlanProvider.notifier).state = saved.plan;
-    if (saved.apps.isNotEmpty) {
+    if (saved.apps.isEmpty) {
+      // 保存された一覧が空ならデモアプリを自動登録する。
+      await notifier.initializeDemoAppsIfNeeded();
+    } else {
       notifier.restore(saved.apps);
-      return;
     }
+  } else {
+    // 保存データが無い（初回起動・永続化非対応環境）なら従来通りデモアプリを
+    // 自動登録する。デモアプリのIDは固定のため、繰り返し呼ばれてもSecure
+    // Storageに新規エントリが増え続けることはない。
+    await notifier.initializeDemoAppsIfNeeded();
   }
 
-  // 保存データが無い（初回起動・永続化非対応環境）か、保存された一覧が空なら
-  // 従来通りデモアプリを自動登録する。デモアプリのIDは固定のため、繰り返し
-  // 呼ばれてもSecure Storageに新規エントリが増え続けることはない。
-  await notifier.initializeDemoAppsIfNeeded();
+  // 「広告を消す」purchaseの実際の状態(RevenueCat側)を正としてローカルの
+  // プラン表示を補正する。返金・サブスク失効等でローカルキャッシュ
+  // (LocalState.plan)が古いままになるのを防ぐため。PurchaseService未設定
+  // (プレースホルダキーのまま)の場合はisAdsRemoved()が常にfalseを返すため、
+  // 実質free固定になる(安全側)。
+  final adsRemoved = await ref.read(purchaseServiceProvider).isAdsRemoved();
+  final reconciledPlan = adsRemoved ? UserPlan.pro : UserPlan.free;
+  if (reconciledPlan != ref.read(userPlanProvider)) {
+    await notifier.setPlan(reconciledPlan);
+  }
 });

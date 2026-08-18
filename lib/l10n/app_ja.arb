@@ -180,6 +180,24 @@
     "placeholders": {"masked": {"type": "String"}}
   },
 
+  "settingsRevenueCatLabel": "RevenueCat連携",
+  "settingsRevenueCatConnected": "接続済み",
+  "settingsRevenueCatNotConnected": "未接続（売上・DL数はサンプルデータのまま）",
+  "settingsRevenueCatConnectButton": "接続する",
+  "settingsRevenueCatDisconnectButton": "切断",
+  "settingsRevenueCatConnectHint": "RevenueCatダッシュボードでOAuthアプリを作成し、リダイレクトURIに ririkan://revenuecat-oauth-callback を登録してください。取得したClient ID / Client Secretを入力すると、ブラウザで認可画面が開きます。",
+  "settingsRevenueCatClientIdLabel": "Client ID",
+  "settingsRevenueCatClientSecretLabel": "Client Secret",
+  "settingsRevenueCatConnectSubmit": "接続",
+  "settingsRevenueCatConnectFailed": "接続に失敗しました: {error}",
+  "@settingsRevenueCatConnectFailed": {
+    "placeholders": {"error": {"type": "String"}}
+  },
+  "settingsRevenueCatDisconnectFailed": "切断に失敗しました: {error}",
+  "@settingsRevenueCatDisconnectFailed": {
+    "placeholders": {"error": {"type": "String"}}
+  },
+
   "reviewStatusWaitingReview": "審査待ち",
   "reviewStatusInReview": "審査中",
   "reviewStatusRejected": "リジェクト",

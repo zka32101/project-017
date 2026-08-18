@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../models/connected_app.dart';
 import '../../models/user_plan.dart';
+import '../../services/revenue_cat_oauth_service.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
 import '../../viewmodels/service_providers.dart';
 
@@ -46,6 +47,8 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text(l10n.settingsAppsCount(apps.length)),
           ),
           for (final app in apps) _AppSettingsTile(app: app),
+          const Divider(),
+          const _RevenueCatConnectionTile(),
           const Divider(),
           ListTile(
             title: Text(l10n.settingsNotificationLabel),
@@ -123,6 +126,166 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
               icon: const Icon(Icons.delete_outline),
               onPressed: _remove,
             ),
+    );
+  }
+}
+
+/// RevenueCat連携（売上・DL数の実データ化）。App Store Connect/Play Console
+/// のようなアプリ単位のAPIキー入力とは異なり、OAuth 2.0接続がアプリ全体で
+/// 1回だけ必要になる（RevenueCatOAuthServiceのドキュメントコメント参照）。
+class _RevenueCatConnectionTile extends ConsumerStatefulWidget {
+  const _RevenueCatConnectionTile();
+
+  @override
+  ConsumerState<_RevenueCatConnectionTile> createState() =>
+      _RevenueCatConnectionTileState();
+}
+
+class _RevenueCatConnectionTileState
+    extends ConsumerState<_RevenueCatConnectionTile> {
+  bool? _connected;
+  bool _busy = false;
+  bool _showConnectForm = false;
+  final _clientIdController = TextEditingController();
+  final _clientSecretController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshStatus();
+  }
+
+  @override
+  void dispose() {
+    _clientIdController.dispose();
+    _clientSecretController.dispose();
+    super.dispose();
+  }
+
+  RevenueCatOAuthService get _oauth =>
+      ref.read(revenueCatOAuthServiceProvider);
+
+  Future<void> _refreshStatus() async {
+    final connected = await _oauth.isConnected();
+    if (!mounted) return;
+    setState(() => _connected = connected);
+  }
+
+  Future<void> _connect() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _busy = true);
+    try {
+      await _oauth.connect(
+        clientId: _clientIdController.text.trim(),
+        clientSecret: _clientSecretController.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _showConnectForm = false;
+        _connected = true;
+      });
+      _clientIdController.clear();
+      _clientSecretController.clear();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.settingsRevenueCatConnectFailed('$e'))),
+      );
+    }
+  }
+
+  Future<void> _disconnect() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _busy = true);
+    try {
+      await _oauth.disconnect();
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _connected = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.settingsRevenueCatDisconnectFailed('$e'))),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final connected = _connected;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          title: Text(l10n.settingsRevenueCatLabel),
+          subtitle: Text(
+            connected == null
+                ? ''
+                : (connected
+                    ? l10n.settingsRevenueCatConnected
+                    : l10n.settingsRevenueCatNotConnected),
+          ),
+          trailing: _busy
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : (connected == true
+                  ? TextButton(
+                      onPressed: _disconnect,
+                      child: Text(l10n.settingsRevenueCatDisconnectButton),
+                    )
+                  : TextButton(
+                      onPressed: () =>
+                          setState(() => _showConnectForm = !_showConnectForm),
+                      child: Text(l10n.settingsRevenueCatConnectButton),
+                    )),
+        ),
+        if (connected == false && _showConnectForm)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.settingsRevenueCatConnectHint,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _clientIdController,
+                  decoration: InputDecoration(
+                    labelText: l10n.settingsRevenueCatClientIdLabel,
+                  ),
+                ),
+                TextField(
+                  controller: _clientSecretController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.settingsRevenueCatClientSecretLabel,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: _busy ? null : _connect,
+                    child: Text(l10n.settingsRevenueCatConnectSubmit),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

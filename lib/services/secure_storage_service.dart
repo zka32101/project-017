@@ -26,4 +26,15 @@ class SecureStorageService {
 
   Future<void> deleteApiKey(String connectedAppId) =>
       _storage.delete(key: refKeyFor(connectedAppId));
+
+  /// ConnectedApp単位ではなく、アプリ全体で1つだけ保持する値（RevenueCat
+  /// OAuthクライアント情報・トークン等）向けの汎用read/write/delete。
+  /// キーの衝突を避けるため、呼び出し側は`revenuecat_`のような専用の
+  /// プレフィックスを付けること（apikey_*と被らなければ何でもよい）。
+  Future<void> writeValue({required String key, required String value}) =>
+      _storage.write(key: key, value: value);
+
+  Future<String?> readValue(String key) => _storage.read(key: key);
+
+  Future<void> deleteValue(String key) => _storage.delete(key: key);
 }

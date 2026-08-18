@@ -776,6 +776,72 @@ abstract class AppLocalizations {
   /// **'APIキー: {masked}'**
   String settingsApiKeyMasked(String masked);
 
+  /// No description provided for @settingsRevenueCatLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'RevenueCat連携'**
+  String get settingsRevenueCatLabel;
+
+  /// No description provided for @settingsRevenueCatConnected.
+  ///
+  /// In ja, this message translates to:
+  /// **'接続済み'**
+  String get settingsRevenueCatConnected;
+
+  /// No description provided for @settingsRevenueCatNotConnected.
+  ///
+  /// In ja, this message translates to:
+  /// **'未接続（売上・DL数はサンプルデータのまま）'**
+  String get settingsRevenueCatNotConnected;
+
+  /// No description provided for @settingsRevenueCatConnectButton.
+  ///
+  /// In ja, this message translates to:
+  /// **'接続する'**
+  String get settingsRevenueCatConnectButton;
+
+  /// No description provided for @settingsRevenueCatDisconnectButton.
+  ///
+  /// In ja, this message translates to:
+  /// **'切断'**
+  String get settingsRevenueCatDisconnectButton;
+
+  /// No description provided for @settingsRevenueCatConnectHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'RevenueCatダッシュボードでOAuthアプリを作成し、リダイレクトURIに ririkan://revenuecat-oauth-callback を登録してください。取得したClient ID / Client Secretを入力すると、ブラウザで認可画面が開きます。'**
+  String get settingsRevenueCatConnectHint;
+
+  /// No description provided for @settingsRevenueCatClientIdLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'Client ID'**
+  String get settingsRevenueCatClientIdLabel;
+
+  /// No description provided for @settingsRevenueCatClientSecretLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'Client Secret'**
+  String get settingsRevenueCatClientSecretLabel;
+
+  /// No description provided for @settingsRevenueCatConnectSubmit.
+  ///
+  /// In ja, this message translates to:
+  /// **'接続'**
+  String get settingsRevenueCatConnectSubmit;
+
+  /// No description provided for @settingsRevenueCatConnectFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'接続に失敗しました: {error}'**
+  String settingsRevenueCatConnectFailed(String error);
+
+  /// No description provided for @settingsRevenueCatDisconnectFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'切断に失敗しました: {error}'**
+  String settingsRevenueCatDisconnectFailed(String error);
+
   /// No description provided for @reviewStatusWaitingReview.
   ///
   /// In ja, this message translates to:

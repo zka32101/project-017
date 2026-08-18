@@ -400,6 +400,45 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settingsRevenueCatLabel => 'RevenueCat Connection';
+
+  @override
+  String get settingsRevenueCatConnected => 'Connected';
+
+  @override
+  String get settingsRevenueCatNotConnected =>
+      'Not connected (revenue/downloads still show sample data)';
+
+  @override
+  String get settingsRevenueCatConnectButton => 'Connect';
+
+  @override
+  String get settingsRevenueCatDisconnectButton => 'Disconnect';
+
+  @override
+  String get settingsRevenueCatConnectHint =>
+      'Create an OAuth app in the RevenueCat dashboard and register ririkan://revenuecat-oauth-callback as the redirect URI. Enter the resulting Client ID / Client Secret below, then a browser will open for authorization.';
+
+  @override
+  String get settingsRevenueCatClientIdLabel => 'Client ID';
+
+  @override
+  String get settingsRevenueCatClientSecretLabel => 'Client Secret';
+
+  @override
+  String get settingsRevenueCatConnectSubmit => 'Connect';
+
+  @override
+  String settingsRevenueCatConnectFailed(String error) {
+    return 'Failed to connect: $error';
+  }
+
+  @override
+  String settingsRevenueCatDisconnectFailed(String error) {
+    return 'Failed to disconnect: $error';
+  }
+
+  @override
   String get reviewStatusWaitingReview => 'Waiting for Review';
 
   @override

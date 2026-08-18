@@ -4,6 +4,7 @@ import '../services/app_store_connect_service.dart';
 import '../services/checklist_service.dart';
 import '../services/local_store_service.dart';
 import '../services/play_console_service.dart';
+import '../services/revenue_cat_oauth_service.dart';
 import '../services/revenue_cat_service.dart';
 import '../services/review_status_service.dart';
 import '../services/secure_storage_service.dart';
@@ -30,8 +31,17 @@ final playConsoleServiceProvider = Provider<PlayConsoleService>(
 final checklistServiceProvider =
     Provider<ChecklistService>((ref) => const ChecklistService());
 
-final revenueCatServiceProvider =
-    Provider<RevenueCatService>((ref) => const RevenueCatService());
+final revenueCatOAuthServiceProvider = Provider<RevenueCatOAuthService>(
+  (ref) => RevenueCatOAuthService(
+    secureStorageService: ref.watch(secureStorageServiceProvider),
+  ),
+);
+
+final revenueCatServiceProvider = Provider<RevenueCatService>(
+  (ref) => RevenueCatService(
+    oauthService: ref.watch(revenueCatOAuthServiceProvider),
+  ),
+);
 
 /// プラットフォームに応じて審査状態Serviceを切り替える（設計書 Step1）。
 final reviewStatusServiceProvider =

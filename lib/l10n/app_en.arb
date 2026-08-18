@@ -127,6 +127,18 @@
   "settingsRemoveFailed": "Failed to remove: {error}",
   "settingsApiKeyMasked": "API Key: {masked}",
 
+  "settingsRevenueCatLabel": "RevenueCat Connection",
+  "settingsRevenueCatConnected": "Connected",
+  "settingsRevenueCatNotConnected": "Not connected (revenue/downloads still show sample data)",
+  "settingsRevenueCatConnectButton": "Connect",
+  "settingsRevenueCatDisconnectButton": "Disconnect",
+  "settingsRevenueCatConnectHint": "Create an OAuth app in the RevenueCat dashboard and register ririkan://revenuecat-oauth-callback as the redirect URI. Enter the resulting Client ID / Client Secret below, then a browser will open for authorization.",
+  "settingsRevenueCatClientIdLabel": "Client ID",
+  "settingsRevenueCatClientSecretLabel": "Client Secret",
+  "settingsRevenueCatConnectSubmit": "Connect",
+  "settingsRevenueCatConnectFailed": "Failed to connect: {error}",
+  "settingsRevenueCatDisconnectFailed": "Failed to disconnect: {error}",
+
   "reviewStatusWaitingReview": "Waiting for Review",
   "reviewStatusInReview": "In Review",
   "reviewStatusRejected": "Rejected",

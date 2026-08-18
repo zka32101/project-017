@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../l10n/gen/app_localizations.dart';
 import '../../models/connected_app.dart';
@@ -41,6 +42,12 @@ class SettingsScreen extends ConsumerWidget {
             title: Text(l10n.settingsPlanLabel),
             subtitle: Text(
                 plan == UserPlan.pro ? l10n.settingsPlanPro : l10n.settingsPlanFree),
+            trailing: plan == UserPlan.free
+                ? TextButton(
+                    onPressed: () => context.push('/paywall'),
+                    child: Text(l10n.dashboardRemoveAds),
+                  )
+                : null,
           ),
           const Divider(),
           ListTile(

@@ -350,17 +350,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationPromptLater => 'Later';
 
   @override
-  String get paywallTitle => 'To manage a 3rd app';
+  String get paywallTitle => 'Remove ads?';
 
   @override
   String get paywallBody =>
-      'The Pro plan removes the app limit.\nInstant push notifications, widgets, and team sharing are also included.\n¥600/month or ¥5,000/year';
+      'For a small monthly fee, you can remove all ads shown in the app.';
 
   @override
-  String get paywallUpgrade => 'Upgrade to Pro';
+  String paywallPriceLabel(String price) {
+    return 'Remove ads for $price / month';
+  }
+
+  @override
+  String get paywallUpgrade => 'Remove Ads';
+
+  @override
+  String get paywallUnavailable =>
+      'This isn\'t available right now. Please try again later.';
+
+  @override
+  String get paywallRestore => 'Restore Purchases';
 
   @override
   String get paywallLater => 'Later';
+
+  @override
+  String get dashboardRemoveAds => 'Remove Ads';
 
   @override
   String get initialScanMessage =>
@@ -379,10 +394,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPlanLabel => 'Plan';
 
   @override
-  String get settingsPlanPro => 'Pro (Unlimited)';
+  String get settingsPlanPro => 'Ad-free';
 
   @override
-  String get settingsPlanFree => 'Free (up to 2 apps)';
+  String get settingsPlanFree => 'Ads shown';
 
   @override
   String get settingsAppsManagementLabel => 'Manage Registered Apps';

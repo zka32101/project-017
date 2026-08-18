@@ -2,6 +2,11 @@
     <!-- 毎朝の状態サマリー通知（flutter_local_notifications）: 端末再起動後も
          スケジュール済みの通知を復元できるようにする。 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- App Store Connect/Play Console/RevenueCat等のHTTP通信、および広告表示に必要。
+         (debug/profileバリアントの各AndroidManifest.xmlには元々あったが、
+         releaseビルドが含むmainのAndroidManifest.xmlには無く、release版では
+         これらの通信が全て失敗していた可能性がある不具合を合わせて修正) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="ririkan"
         android:name="${applicationName}"
@@ -46,6 +51,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- 【要設定】広告表示（google_mobile_ads）。以下はGoogle公式のテスト用
+             App ID(実際の広告枠には紐づかない)。本番リリース前に、実際に
+             AdMobで作成したApp IDへ置き換えること。 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
 
         <!-- リリカン ホーム画面ウィジェット（Should機能の土台、home_widgetパッケージ経由） -->
         <receiver

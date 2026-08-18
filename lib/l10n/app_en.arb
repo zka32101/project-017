@@ -110,10 +110,14 @@
   "notificationPromptAllow": "Allow Notifications",
   "notificationPromptLater": "Later",
 
-  "paywallTitle": "To manage a 3rd app",
-  "paywallBody": "The Pro plan removes the app limit.\nInstant push notifications, widgets, and team sharing are also included.\n¥600/month or ¥5,000/year",
-  "paywallUpgrade": "Upgrade to Pro",
+  "paywallTitle": "Remove ads?",
+  "paywallBody": "For a small monthly fee, you can remove all ads shown in the app.",
+  "paywallPriceLabel": "Remove ads for {price} / month",
+  "paywallUpgrade": "Remove Ads",
+  "paywallUnavailable": "This isn't available right now. Please try again later.",
+  "paywallRestore": "Restore Purchases",
   "paywallLater": "Later",
+  "dashboardRemoveAds": "Remove Ads",
 
   "initialScanMessage": "Checking the status of your registered apps…",
   "initialScanSubMessage": "Control tower is starting up",
@@ -121,8 +125,8 @@
 
   "settingsTitle": "Settings",
   "settingsPlanLabel": "Plan",
-  "settingsPlanPro": "Pro (Unlimited)",
-  "settingsPlanFree": "Free (up to 2 apps)",
+  "settingsPlanPro": "Ad-free",
+  "settingsPlanFree": "Ads shown",
   "settingsAppsManagementLabel": "Manage Registered Apps",
   "settingsAppsCount": "{count} registered",
   "settingsNotificationLabel": "Daily Reminder",

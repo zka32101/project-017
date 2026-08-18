@@ -100,6 +100,55 @@ void main() {
     expect(payload['exp'], isNotNull);
   });
 
+  test('links.nextがある限りページを辿り、201件超のアカウントでも全件取得する',
+      () async {
+    final calledUris = <String>[];
+    final client = MockClient((request) async {
+      calledUris.add(request.url.toString());
+      if (calledUris.length == 1) {
+        return http.Response(
+          jsonEncode({
+            'data': [
+              {
+                'type': 'apps',
+                'id': '1',
+                'attributes': {'name': 'App One', 'bundleId': 'works.petit.one'},
+              },
+            ],
+            'links': {
+              'next':
+                  'https://api.appstoreconnect.apple.com/v1/apps?limit=200&cursor=PAGE2',
+            },
+          }),
+          200,
+        );
+      }
+      return http.Response(
+        jsonEncode({
+          'data': [
+            {
+              'type': 'apps',
+              'id': '2',
+              'attributes': {'name': 'App Two', 'bundleId': 'works.petit.two'},
+            },
+          ],
+          // 最終ページにはlinks.nextが無い。
+          'links': <String, dynamic>{},
+        }),
+        200,
+      );
+    });
+
+    final apiClient = AppStoreConnectApiClient(httpClient: client);
+    final apps = await apiClient.listApps(validCredentialJson());
+
+    expect(calledUris, hasLength(2));
+    expect(calledUris[1], contains('cursor=PAGE2'));
+    expect(apps, hasLength(2));
+    expect(apps.map((a) => a.bundleIdOrPackageName),
+        containsAll(['works.petit.one', 'works.petit.two']));
+  });
+
   test('アプリが0件の応答なら空リストを返す(discoverApps側で"見つからない"扱いにする)',
       () async {
     final client = MockClient((request) async {

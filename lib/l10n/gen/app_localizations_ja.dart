@@ -288,6 +288,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exportShare => '共有';
 
   @override
+  String get exportAllTitle => '全アプリ集約エクスポート';
+
+  @override
+  String get exportAllDescription =>
+      '登録中の全アプリの審査履歴・リジェクト理由・ビルド失敗ログを1つのファイルにまとめます。';
+
+  @override
+  String get dashboardExportAllTooltip => '全アプリをエクスポート';
+
+  @override
   String get onboardingPage1Title => '複数アプリの状態を、1つの管制塔で';
 
   @override
@@ -318,7 +328,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get notificationPromptBody =>
-      'プッシュ通知を許可すると、状態が変わった瞬間にお知らせします。\n（本番実装ではここでOS標準の許可ダイアログを表示します）';
+      '通知を許可すると、毎朝決まった時刻に審査状況確認のリマインダーをお届けします。';
 
   @override
   String get notificationPromptAllow => '通知を許可する';
@@ -369,10 +379,14 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get settingsNotificationLabel => '通知設定';
+  String get settingsNotificationLabel => '毎朝の通知';
 
   @override
-  String get settingsNotificationSubtitle => '毎朝の状態サマリー通知（未実装・次フェーズ）';
+  String get settingsNotificationSubtitle => '毎朝9:00に審査状況確認のリマインダーを送信します';
+
+  @override
+  String get settingsNotificationPermissionDenied =>
+      '通知が許可されていません。端末の設定アプリから許可してください';
 
   @override
   String settingsRemoveFailed(String error) {

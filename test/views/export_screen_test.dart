@@ -43,6 +43,24 @@ class _FakeExportService extends ExportService {
       expiresAt: DateTime(2026, 8, 20),
     );
   }
+
+  @override
+  Future<ExportJob> generateAll({
+    required String userId,
+    required List<AppExportBundle> bundles,
+    required ExportFormat format,
+    required DateTimeRange dateRange,
+  }) async {
+    return ExportJob(
+      id: 'fake-export-all-id',
+      userId: userId,
+      format: format,
+      dateRange: dateRange,
+      status: ExportJobStatus.ready,
+      fileUrl: '/fake/path/export_all.${format == ExportFormat.pdf ? 'pdf' : 'csv'}',
+      expiresAt: DateTime(2026, 8, 20),
+    );
+  }
 }
 
 void main() {
@@ -80,6 +98,56 @@ void main() {
     router.go('/export/${app.id}');
     await tester.pumpAndSettle();
 
+    expect(find.text('エクスポートを生成'), findsOneWidget);
+
+    await tester.tap(find.text('エクスポートを生成'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('PDF を生成しました'), findsOneWidget);
+    expect(find.text('共有'), findsOneWidget);
+  });
+
+  testWidgets('全アプリ集約エクスポート(/export-all)でも成功カードが表示される', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        exportServiceProvider.overrideWithValue(const _FakeExportService()),
+        reviewStatusServiceProvider(PlatformType.ios)
+            .overrideWithValue(FakeReviewStatusService()),
+        reviewStatusServiceProvider(PlatformType.android)
+            .overrideWithValue(FakeReviewStatusService()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(connectedAppsProvider.notifier).registerApp(
+          userId: 'u1',
+          platform: PlatformType.ios,
+          bundleIdOrPackageName: 'works.petit.app1',
+          displayName: '集約対象アプリ1',
+          apiKey: 'k',
+        );
+    await container.read(connectedAppsProvider.notifier).registerApp(
+          userId: 'u1',
+          platform: PlatformType.android,
+          bundleIdOrPackageName: 'works.petit.app2',
+          displayName: '集約対象アプリ2',
+          apiKey: 'k',
+        );
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/export-all');
+    await tester.pumpAndSettle();
+
+    expect(find.text('全アプリ集約エクスポート'), findsOneWidget);
     expect(find.text('エクスポートを生成'), findsOneWidget);
 
     await tester.tap(find.text('エクスポートを生成'));

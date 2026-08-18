@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../models/connected_app.dart';
 import '../../models/user_plan.dart';
+import '../../services/notification_service.dart';
 import '../../services/revenue_cat_oauth_service.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
 import '../../viewmodels/service_providers.dart';
@@ -50,10 +51,7 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           const _RevenueCatConnectionTile(),
           const Divider(),
-          ListTile(
-            title: Text(l10n.settingsNotificationLabel),
-            subtitle: Text(l10n.settingsNotificationSubtitle),
-          ),
+          const _NotificationToggleTile(),
         ],
       ),
     );
@@ -286,6 +284,87 @@ class _RevenueCatConnectionTileState
             ),
           ),
       ],
+    );
+  }
+}
+
+/// 毎朝の状態サマリー通知（Should機能）のON/OFFトグル。
+/// ONにする瞬間にOS通知許可をリクエストし、許可された場合のみ実際に
+/// スケジュールする(拒否された場合はトグルをOFFに戻し、理由を表示する)。
+class _NotificationToggleTile extends ConsumerStatefulWidget {
+  const _NotificationToggleTile();
+
+  @override
+  ConsumerState<_NotificationToggleTile> createState() =>
+      _NotificationToggleTileState();
+}
+
+class _NotificationToggleTileState
+    extends ConsumerState<_NotificationToggleTile> {
+  bool? _enabled;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshState();
+  }
+
+  Future<void> _refreshState() async {
+    final value = await ref
+        .read(secureStorageServiceProvider)
+        .readValue(notificationsEnabledStorageKey);
+    if (!mounted) return;
+    setState(() => _enabled = value == 'true');
+  }
+
+  Future<void> _onChanged(bool value) async {
+    final l10n = AppLocalizations.of(context);
+    final notificationService = ref.read(notificationServiceProvider);
+    final secureStorage = ref.read(secureStorageServiceProvider);
+    setState(() => _busy = true);
+
+    if (value) {
+      final granted = await notificationService.requestPermission();
+      if (granted) {
+        await notificationService.scheduleDailyReminder();
+        await secureStorage.writeValue(
+          key: notificationsEnabledStorageKey,
+          value: 'true',
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _enabled = granted;
+      });
+      if (!granted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.settingsNotificationPermissionDenied)),
+        );
+      }
+    } else {
+      await notificationService.cancelDailyReminder();
+      await secureStorage.writeValue(
+        key: notificationsEnabledStorageKey,
+        value: 'false',
+      );
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _enabled = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SwitchListTile(
+      title: Text(l10n.settingsNotificationLabel),
+      subtitle: Text(l10n.settingsNotificationSubtitle),
+      value: _enabled ?? false,
+      onChanged: _busy || _enabled == null ? null : _onChanged,
     );
   }
 }

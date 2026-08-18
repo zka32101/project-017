@@ -136,6 +136,9 @@
     "placeholders": {"date": {"type": "String"}}
   },
   "exportShare": "共有",
+  "exportAllTitle": "全アプリ集約エクスポート",
+  "exportAllDescription": "登録中の全アプリの審査履歴・リジェクト理由・ビルド失敗ログを1つのファイルにまとめます。",
+  "dashboardExportAllTooltip": "全アプリをエクスポート",
 
   "onboardingPage1Title": "複数アプリの状態を、1つの管制塔で",
   "onboardingPage1Body": "App Store Connect と Play Console をまたいで、審査状態・ビルド状態をまとめて見張ります。",
@@ -147,7 +150,7 @@
   "onboardingStart": "はじめる",
 
   "notificationPromptTitle": "審査通過・リジェクトを見逃さないために",
-  "notificationPromptBody": "プッシュ通知を許可すると、状態が変わった瞬間にお知らせします。\n（本番実装ではここでOS標準の許可ダイアログを表示します）",
+  "notificationPromptBody": "通知を許可すると、毎朝決まった時刻に審査状況確認のリマインダーをお届けします。",
   "notificationPromptAllow": "通知を許可する",
   "notificationPromptLater": "あとで",
 
@@ -169,8 +172,9 @@
   "@settingsAppsCount": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "settingsNotificationLabel": "通知設定",
-  "settingsNotificationSubtitle": "毎朝の状態サマリー通知（未実装・次フェーズ）",
+  "settingsNotificationLabel": "毎朝の通知",
+  "settingsNotificationSubtitle": "毎朝9:00に審査状況確認のリマインダーを送信します",
+  "settingsNotificationPermissionDenied": "通知が許可されていません。端末の設定アプリから許可してください",
   "settingsRemoveFailed": "削除に失敗しました: {error}",
   "@settingsRemoveFailed": {
     "placeholders": {"error": {"type": "String"}}

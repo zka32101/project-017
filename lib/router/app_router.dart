@@ -80,6 +80,10 @@ GoRouter buildAppRouter() {
         },
       ),
       GoRoute(
+        path: '/export-all',
+        builder: (context, state) => const ExportScreen(),
+      ),
+      GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),

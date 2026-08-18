@@ -300,6 +300,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportShare => 'Share';
 
   @override
+  String get exportAllTitle => 'Export All Apps';
+
+  @override
+  String get exportAllDescription =>
+      'Bundles review history, rejection reasons, and build failure logs for every registered app into a single file.';
+
+  @override
+  String get dashboardExportAllTooltip => 'Export all apps';
+
+  @override
   String get onboardingPage1Title => 'Monitor every app from one control tower';
 
   @override
@@ -331,7 +341,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationPromptBody =>
-      'Allow push notifications and we\'ll tell you the moment something changes.\n(The production build will show the OS permission dialog here.)';
+      'Allow notifications and we\'ll send you a daily reminder to check your apps\' review status.';
 
   @override
   String get notificationPromptAllow => 'Allow Notifications';
@@ -383,11 +393,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsNotificationLabel => 'Notifications';
+  String get settingsNotificationLabel => 'Daily Reminder';
 
   @override
   String get settingsNotificationSubtitle =>
-      'Daily morning summary notification (not yet implemented)';
+      'Sends a reminder to check review status every day at 9:00 AM';
+
+  @override
+  String get settingsNotificationPermissionDenied =>
+      'Notifications are not allowed. Please enable them in your device settings';
 
   @override
   String settingsRemoveFailed(String error) {

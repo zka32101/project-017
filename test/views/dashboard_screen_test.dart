@@ -208,5 +208,17 @@ void main() {
           .toList();
       expect(titles, ['Apple Android', 'Zebra iOS']);
     });
+
+    testWidgets('登録アプリが1件以上あると全アプリエクスポートアイコンが表示され、'
+        'タップで/export-allへ遷移する', (tester) async {
+      await pumpDashboardWith(tester);
+
+      expect(find.byIcon(Icons.ios_share_outlined), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.ios_share_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text('全アプリ集約エクスポート'), findsOneWidget);
+    });
   });
 }

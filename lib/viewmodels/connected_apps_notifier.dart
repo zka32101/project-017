@@ -225,12 +225,16 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
 
   // 「広告を消す」purchaseの実際の状態(RevenueCat側)を正としてローカルの
   // プラン表示を補正する。返金・サブスク失効等でローカルキャッシュ
-  // (LocalState.plan)が古いままになるのを防ぐため。PurchaseService未設定
-  // (プレースホルダキーのまま)の場合はisAdsRemoved()が常にfalseを返すため、
-  // 実質free固定になる(安全側)。
+  // (LocalState.plan)が古いままになるのを防ぐため。
+  // isAdsRemoved()がnull(未設定・ネットワークエラー等で確認不能)の場合は
+  // 補正しない。ここでnullをfalse扱いしてしまうと、実際に購入済みの
+  // ユーザーが一時的な通信エラーに遭遇しただけで「未購入」に巻き戻り、
+  // 広告が復活してしまう(=お金を払ったのに広告が出る)重大な不具合になる。
   final adsRemoved = await ref.read(purchaseServiceProvider).isAdsRemoved();
-  final reconciledPlan = adsRemoved ? UserPlan.pro : UserPlan.free;
-  if (reconciledPlan != ref.read(userPlanProvider)) {
-    await notifier.setPlan(reconciledPlan);
+  if (adsRemoved != null) {
+    final reconciledPlan = adsRemoved ? UserPlan.pro : UserPlan.free;
+    if (reconciledPlan != ref.read(userPlanProvider)) {
+      await notifier.setPlan(reconciledPlan);
+    }
   }
 });

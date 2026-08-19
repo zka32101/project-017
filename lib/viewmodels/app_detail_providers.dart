@@ -16,26 +16,14 @@ import 'service_providers.dart';
 final crashSummariesProvider =
     FutureProvider.family<List<CrashSummary>, ConnectedApp>((ref, app) async {
   final service = ref.watch(reviewStatusServiceProvider(app.platform));
-  final result = await service.fetchCrashSummaries(app);
-  switch (result) {
-    case ServiceSuccess<List<CrashSummary>>(:final data):
-      return data;
-    case ServiceFailure<List<CrashSummary>> failure:
-      throw ServiceFailureException(failure);
-  }
+  return (await service.fetchCrashSummaries(app)).unwrap();
 });
 
 /// アプリ詳細画面: 売上・DL数サマリータブ（Should機能、RevenueCat連携）
 final revenueSummaryProvider =
     FutureProvider.family<List<RevenueSummary>, ConnectedApp>((ref, app) async {
   final service = ref.watch(revenueCatServiceProvider);
-  final result = await service.fetchRevenueSummary(app);
-  switch (result) {
-    case ServiceSuccess<List<RevenueSummary>>(:final data):
-      return data;
-    case ServiceFailure<List<RevenueSummary>> failure:
-      throw ServiceFailureException(failure);
-  }
+  return (await service.fetchRevenueSummary(app)).unwrap();
 });
 
 /// アプリ詳細画面: 審査履歴タブ
@@ -43,13 +31,7 @@ final reviewHistoryProvider =
     FutureProvider.family<List<ReviewStatusSnapshot>, ConnectedApp>(
         (ref, app) async {
   final service = ref.watch(reviewStatusServiceProvider(app.platform));
-  final result = await service.fetchReviewStatus(app);
-  switch (result) {
-    case ServiceSuccess<List<ReviewStatusSnapshot>>(:final data):
-      return data;
-    case ServiceFailure<List<ReviewStatusSnapshot>> failure:
-      throw ServiceFailureException(failure);
-  }
+  return (await service.fetchReviewStatus(app)).unwrap();
 });
 
 /// アプリ詳細画面: リジェクト理由タブ
@@ -57,13 +39,7 @@ final rejectionDetailsProvider =
     FutureProvider.family<List<RejectionDetail>, ConnectedApp>(
         (ref, app) async {
   final service = ref.watch(reviewStatusServiceProvider(app.platform));
-  final result = await service.fetchRejectionDetails(app);
-  switch (result) {
-    case ServiceSuccess<List<RejectionDetail>>(:final data):
-      return data;
-    case ServiceFailure<List<RejectionDetail>> failure:
-      throw ServiceFailureException(failure);
-  }
+  return (await service.fetchRejectionDetails(app)).unwrap();
 });
 
 /// アプリ詳細画面: ビルド失敗ログタブ
@@ -71,11 +47,5 @@ final buildFailureLogsProvider =
     FutureProvider.family<List<BuildFailureLog>, ConnectedApp>(
         (ref, app) async {
   final service = ref.watch(reviewStatusServiceProvider(app.platform));
-  final result = await service.fetchBuildFailureLogs(app);
-  switch (result) {
-    case ServiceSuccess<List<BuildFailureLog>>(:final data):
-      return data;
-    case ServiceFailure<List<BuildFailureLog>> failure:
-      throw ServiceFailureException(failure);
-  }
+  return (await service.fetchBuildFailureLogs(app)).unwrap();
 });

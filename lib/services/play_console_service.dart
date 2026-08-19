@@ -58,68 +58,59 @@ class PlayConsoleService implements ReviewStatusService {
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
     ConnectedApp app,
   ) async {
-    if (app.id == demoAndroidAppId) {
+    if (isDemoAppId(app.id)) {
       return ServiceSuccess(_mock.reviewStatusesFor(app.id, app.platform));
     }
-    try {
+    return guardServiceCall(ServiceFailureReason.reviewStatus, () async {
       final credential = await _secureStorage.readApiKey(app.id);
       if (credential == null || credential.isEmpty) {
-        return const ServiceFailure(ServiceFailureReason.reviewStatus);
+        throw StateError('APIキーが登録されていません');
       }
       final snapshot = await _apiClient.fetchLatestReviewStatus(
         serviceAccountJson: credential,
         packageName: app.bundleIdOrPackageName,
         connectedAppId: app.id,
       );
-      return ServiceSuccess(snapshot == null ? [] : [snapshot]);
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.reviewStatus, cause: e);
-    }
+      return snapshot == null ? <ReviewStatusSnapshot>[] : [snapshot];
+    });
   }
 
   @override
   Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
     ConnectedApp app,
-  ) async {
-    try {
-      return ServiceSuccess(_mock.rejectionsFor(app.id));
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.rejectionDetails, cause: e);
-    }
-  }
+  ) =>
+      guardServiceCall(
+        ServiceFailureReason.rejectionDetails,
+        () async => _mock.rejectionsFor(app.id),
+      );
 
   @override
   Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
     ConnectedApp app,
-  ) async {
-    try {
-      return ServiceSuccess(_mock.buildFailuresFor(app.id, app.platform));
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.buildFailureLogs, cause: e);
-    }
-  }
+  ) =>
+      guardServiceCall(
+        ServiceFailureReason.buildFailureLogs,
+        () async => _mock.buildFailuresFor(app.id, app.platform),
+      );
 
   @override
   Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
     ConnectedApp app,
   ) async {
-    if (app.id == demoAndroidAppId) {
+    if (isDemoAppId(app.id)) {
       return ServiceSuccess(_mock.crashSummariesFor(app.id));
     }
-    try {
+    return guardServiceCall(ServiceFailureReason.crashSummaries, () async {
       final credential = await _secureStorage.readApiKey(app.id);
       if (credential == null || credential.isEmpty) {
-        return const ServiceFailure(ServiceFailureReason.crashSummaries);
+        throw StateError('APIキーが登録されていません');
       }
-      final summaries = await _reportingApiClient.fetchCrashSummaries(
+      return _reportingApiClient.fetchCrashSummaries(
         serviceAccountJson: credential,
         packageName: app.bundleIdOrPackageName,
         connectedAppId: app.id,
       );
-      return ServiceSuccess(summaries);
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.crashSummaries, cause: e);
-    }
+    });
   }
 
   /// Google Play Developer API(androidpublisher v3)には「アカウント配下の
@@ -134,28 +125,25 @@ class PlayConsoleService implements ReviewStatusService {
   Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
     String apiKey, {
     List<String> knownPackageNames = const [],
-  }) async {
-    if (knownPackageNames.isEmpty) {
-      return const ServiceFailure(ServiceFailureReason.appDiscovery);
-    }
-    try {
-      final apps = knownPackageNames
-          .map((p) => p.trim())
-          .where((p) => p.isNotEmpty)
-          .toSet() // 重複排除
-          .map((p) => DiscoverableApp(
-                bundleIdOrPackageName: p,
-                displayName: _guessDisplayNameFromPackageName(p),
-              ))
-          .toList();
-      if (apps.isEmpty) {
-        return const ServiceFailure(ServiceFailureReason.appDiscovery);
-      }
-      return ServiceSuccess(apps);
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.appDiscovery, cause: e);
-    }
-  }
+  }) =>
+      guardServiceCall(ServiceFailureReason.appDiscovery, () async {
+        if (knownPackageNames.isEmpty) {
+          throw StateError('パッケージ名が未入力です');
+        }
+        final apps = knownPackageNames
+            .map((p) => p.trim())
+            .where((p) => p.isNotEmpty)
+            .toSet() // 重複排除
+            .map((p) => DiscoverableApp(
+                  bundleIdOrPackageName: p,
+                  displayName: _guessDisplayNameFromPackageName(p),
+                ))
+            .toList();
+        if (apps.isEmpty) {
+          throw StateError('有効なパッケージ名がありません');
+        }
+        return apps;
+      });
 
   /// 'com.example.my_cool_app' -> 'My Cool App' のように、パッケージ名の
   /// 最後のセグメントから見た目上の仮表示名を機械的に生成する。

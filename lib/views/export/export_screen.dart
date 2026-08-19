@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/gen/app_localizations.dart';
+import '../../l10n/service_failure_l10n.dart';
 import '../../models/connected_app.dart';
 import '../../models/export_job.dart';
 import '../../theme/app_theme.dart';
@@ -104,7 +105,8 @@ class _ExportResult extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return state.when(
       loading: () => const SizedBox.shrink(),
-      error: (e, _) => Text(l10n.exportFailedWithReason('$e'),
+      error: (e, _) => Text(
+          l10n.exportFailedWithReason(localizedErrorMessage(l10n, e)),
           style: const TextStyle(color: AppTheme.danger)),
       data: (job) {
         if (job.status == ExportJobStatus.failed) {

@@ -24,11 +24,15 @@ void main() async {
   // flutter test環境では対応するproviderを必ずフェイクへoverrideするため、
   // この初期化コード自体がテストで実行されることはない)。
   WidgetsFlutterBinding.ensureInitialized();
-  await _initializeSilently(
-      '通知', () => LocalNotificationService().initialize());
-  await _initializeSilently('広告SDK', () => const AdService().initialize());
-  await _initializeSilently(
-      '課金SDK', () => RevenueCatPurchaseService().initialize());
+  // 3つとも互いに依存が無く、それぞれ_initializeSilently内で自身の失敗を
+  // 握りつぶすため、直列にawaitして起動を待たせる理由が無い。並行実行して
+  // 起動時間を「合計」ではなく「最も遅い1つ」に短縮する。
+  await Future.wait([
+    _initializeSilently('通知', () => LocalNotificationService().initialize()),
+    _initializeSilently('広告SDK', () => const AdService().initialize()),
+    _initializeSilently(
+        '課金SDK', () => RevenueCatPurchaseService().initialize()),
+  ]);
   runApp(const ProviderScope(child: RirikanApp()));
 }
 

@@ -54,7 +54,7 @@ GoRouter buildAppRouter() {
             return AppDetailScreen(app: extra);
           }
           // ディープリンク（通知タップ等）で extra が無い場合は id から解決する。
-          return _AppDetailByIdResolver(id: id);
+          return _ByIdResolver(id: id, builder: (app) => AppDetailScreen(app: app));
         },
       ),
       GoRoute(
@@ -65,7 +65,7 @@ GoRouter buildAppRouter() {
           if (extra is ConnectedApp) {
             return ChecklistScreen(app: extra);
           }
-          return _ChecklistByIdResolver(id: id);
+          return _ByIdResolver(id: id, builder: (app) => ChecklistScreen(app: app));
         },
       ),
       GoRoute(
@@ -76,7 +76,7 @@ GoRouter buildAppRouter() {
           if (extra is ConnectedApp) {
             return ExportScreen(app: extra);
           }
-          return _ExportByIdResolver(id: id);
+          return _ByIdResolver(id: id, builder: (app) => ExportScreen(app: app));
         },
       ),
       GoRoute(
@@ -115,9 +115,15 @@ class _AppNotFoundScaffold extends StatelessWidget {
   }
 }
 
-class _AppDetailByIdResolver extends ConsumerWidget {
+/// extra なしディープリンク（通知タップ等）で id から ConnectedApp を解決し、
+/// 見つかった場合は builder で目的の画面を組み立てる共通リゾルバ。
+/// AppDetail/Checklist/Export の3ルートとも「id解決→見つからなければ
+/// _AppNotFoundScaffold、見つかれば対応する画面」という同じ処理だったため、
+/// 画面の組み立てだけを builder として差し替え可能にした。
+class _ByIdResolver extends ConsumerWidget {
   final String id;
-  const _AppDetailByIdResolver({required this.id});
+  final Widget Function(ConnectedApp app) builder;
+  const _ByIdResolver({required this.id, required this.builder});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -125,34 +131,6 @@ class _AppDetailByIdResolver extends ConsumerWidget {
     if (app == null) {
       return const _AppNotFoundScaffold();
     }
-    return AppDetailScreen(app: app);
-  }
-}
-
-class _ChecklistByIdResolver extends ConsumerWidget {
-  final String id;
-  const _ChecklistByIdResolver({required this.id});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final app = _resolveConnectedApp(ref, id);
-    if (app == null) {
-      return const _AppNotFoundScaffold();
-    }
-    return ChecklistScreen(app: app);
-  }
-}
-
-class _ExportByIdResolver extends ConsumerWidget {
-  final String id;
-  const _ExportByIdResolver({required this.id});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final app = _resolveConnectedApp(ref, id);
-    if (app == null) {
-      return const _AppNotFoundScaffold();
-    }
-    return ExportScreen(app: app);
+    return builder(app);
   }
 }

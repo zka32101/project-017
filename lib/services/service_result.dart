@@ -40,3 +40,33 @@ class ServiceFailureException implements Exception {
   @override
   String toString() => 'ServiceFailureException(${failure.reason})';
 }
+
+/// FutureProvider群がServiceResultを「成功ならデータ、失敗なら
+/// ServiceFailureExceptionとして投げる」というAsyncValue向けの形へ揃えて
+/// 取り出すための共通ヘルパー。各providerが同じswitch式を個別に書いていた
+/// ものを1箇所にまとめる。
+extension ServiceResultUnwrap<T> on ServiceResult<T> {
+  T unwrap() => switch (this) {
+        ServiceSuccess<T>(:final data) => data,
+        ServiceFailure<T> failure => throw ServiceFailureException(failure),
+      };
+}
+
+/// Service層の各メソッドが繰り返し書いていた
+/// 「try { データを取得してServiceSuccessで包む } catch (e) {
+/// ServiceFailure(reason, cause: e)を返す }」という定型処理をまとめる。
+/// AppStoreConnectService/PlayConsoleServiceの各メソッド本体は、実際の
+/// データ取得処理(body)だけを渡せばよくなる。
+/// cause フィールドは現状どこからも読まれないため(UI側は reason だけを見て
+/// ローカライズ済みメッセージへ変換する)、body内で早期リターンの代わりに
+/// 例外を投げても表示上の挙動は変わらない。
+Future<ServiceResult<T>> guardServiceCall<T>(
+  ServiceFailureReason reason,
+  Future<T> Function() body,
+) async {
+  try {
+    return ServiceSuccess(await body());
+  } catch (e) {
+    return ServiceFailure<T>(reason, cause: e);
+  }
+}

@@ -255,7 +255,7 @@ class _AppStatusCard extends ConsumerWidget {
               shape: BoxShape.circle,
               color: s == null
                   ? AppTheme.textSecondary
-                  : AppTheme.colorForStatusKey(s.statusType.name),
+                  : AppTheme.colorForStatus(s.statusType),
             ),
           ),
           loading: () => const SizedBox(

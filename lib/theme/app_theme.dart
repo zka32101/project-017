@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/review_status_type.dart';
+
 /// 管制塔トーン（設計書 Step5.5）: 硬質・プロフェッショナル。教育アプリ系の可愛さとは対極。
 /// ダークモード必須（開発者の利用環境を想定）。
 class AppTheme {
@@ -14,7 +16,12 @@ class AppTheme {
   static const Color textPrimary = Color(0xFFE6EDF3);
   static const Color textSecondary = Color(0xFF8B98A5);
 
-  static ThemeData get dark {
+  /// MaterialApp.router の theme/darkTheme 両方に同じ値を渡しているため
+  /// (Step5.5 デザインでダークモード固定)、毎回 ThemeData.dark()+copyWith()を
+  /// 再計算しないよう一度だけ計算してキャッシュする。
+  static final ThemeData dark = _buildDark();
+
+  static ThemeData _buildDark() {
     final base = ThemeData.dark(useMaterial3: true);
     return base.copyWith(
       scaffoldBackgroundColor: background,
@@ -57,10 +64,9 @@ class AppTheme {
   }
 
   /// 審査状態→ランプ色（管制塔UIの中核メタファー）
-  static Color colorForStatusKey(String key) => switch (key) {
-        'live' || 'approved' => primary,
-        'inReview' || 'waitingReview' => warning,
-        'rejected' => danger,
-        _ => textSecondary,
+  static Color colorForStatus(ReviewStatusType status) => switch (status) {
+        ReviewStatusType.live || ReviewStatusType.approved => primary,
+        ReviewStatusType.inReview || ReviewStatusType.waitingReview => warning,
+        ReviewStatusType.rejected => danger,
       };
 }

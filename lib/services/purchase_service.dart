@@ -15,10 +15,18 @@ abstract class PurchaseService {
   Future<void> initialize();
 
   /// 「広告を消す」エンタイトルメントが有効かどうか。
-  Future<bool> isAdsRemoved();
+  /// 未初期化・ネットワークエラー等で確認できない場合はnullを返す
+  /// (falseとは区別する。呼び出し側はnullの場合、既存のローカルキャッシュを
+  /// 信用不能な情報で上書きしないこと。詳細はRevenueCatPurchaseServiceの
+  /// ドキュメントコメント参照)。
+  Future<bool?> isAdsRemoved();
 
   /// 「広告を消す」購入対象のPackage(月額プラン)を取得する。
-  /// Offering/Packageが未設定、または未初期化(SDKキー未設定)ならnull。
+  /// Offering/Packageが未設定、現在のOfferingに月額パッケージが無い、
+  /// または未初期化(SDKキー未設定)ならnull。
+  /// UI側(PaywallScreen)は「{価格} / 月」と表示するため、月額以外の
+  /// パッケージ(年額・週額等)へフォールバックしてはならない(実際の課金
+  /// 周期と表示が食い違う、誤解を招く価格表示になる)。
   Future<Package?> getRemoveAdsPackage();
 
   /// 購入を実行する。成功時true、ユーザーによるキャンセル時false、
@@ -65,13 +73,20 @@ class RevenueCatPurchaseService implements PurchaseService {
   }
 
   @override
-  Future<bool> isAdsRemoved() async {
-    if (!_configured) return false;
+  Future<bool?> isAdsRemoved() async {
+    // 未設定(プレースホルダキーのまま)では確認自体ができないためnull。
+    // falseを返すと「確認した結果、未購入」と区別が付かず、呼び出し側
+    // (appBootstrapProvider)がこれを根拠にローカルの購入済みキャッシュを
+    // 誤って上書きしてしまう(実際に購入済みのユーザーが一時的な通信エラー
+    // 等でfalse判定されると、広告が復活してしまう不具合につながる)。
+    if (!_configured) return null;
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey(_removeAdsEntitlementId);
     } catch (_) {
-      return false;
+      // ネットワークエラー等で確認できなかった場合もnull(「未購入と確定」
+      // ではなく「わからない」)。理由は上記コメントと同じ。
+      return null;
     }
   }
 
@@ -80,12 +95,8 @@ class RevenueCatPurchaseService implements PurchaseService {
     if (!_configured) return null;
     try {
       final offerings = await Purchases.getOfferings();
-      final offering = offerings.current;
-      if (offering == null) return null;
-      return offering.monthly ??
-          (offering.availablePackages.isEmpty
-              ? null
-              : offering.availablePackages.first);
+      // 月額以外へフォールバックしない(インターフェースのドキュメント参照)。
+      return offerings.current?.monthly;
     } catch (_) {
       return null;
     }

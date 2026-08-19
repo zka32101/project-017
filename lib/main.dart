@@ -8,14 +8,27 @@ import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
 import 'theme/app_theme.dart';
 
+/// 通知・広告・課金SDKはいずれも副次的な機能であり、初期化失敗がアプリの
+/// 起動そのもの(runApp)をブロックしてはならない。個別にcatchし、失敗しても
+/// 残りの初期化とアプリ起動は続行する(該当機能が単に動かないだけになる)。
+Future<void> _initializeSilently(String name, Future<void> Function() init) async {
+  try {
+    await init();
+  } catch (e, st) {
+    debugPrint('$name の初期化に失敗しました(この機能のみ無効化されます): $e\n$st');
+  }
+}
+
 void main() async {
   // 各種プラグインの初期化はmain()で1回だけ行う(Widget buildからは呼ばない。
   // flutter test環境では対応するproviderを必ずフェイクへoverrideするため、
   // この初期化コード自体がテストで実行されることはない)。
   WidgetsFlutterBinding.ensureInitialized();
-  await LocalNotificationService().initialize();
-  await const AdService().initialize();
-  await RevenueCatPurchaseService().initialize();
+  await _initializeSilently(
+      '通知', () => LocalNotificationService().initialize());
+  await _initializeSilently('広告SDK', () => const AdService().initialize());
+  await _initializeSilently(
+      '課金SDK', () => RevenueCatPurchaseService().initialize());
   runApp(const ProviderScope(child: RirikanApp()));
 }
 

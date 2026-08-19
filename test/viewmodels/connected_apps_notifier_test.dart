@@ -17,13 +17,15 @@ import 'package:ririkan/viewmodels/service_providers.dart';
 class _FakePurchaseService implements PurchaseService {
   _FakePurchaseService({this.adsRemoved = false});
 
-  final bool adsRemoved;
+  /// null = RevenueCat未設定・通信エラー等で確認不能(appBootstrapProvider側は
+  /// この場合プランを補正しないはず)。
+  final bool? adsRemoved;
 
   @override
   Future<void> initialize() async {}
 
   @override
-  Future<bool> isAdsRemoved() async => adsRemoved;
+  Future<bool?> isAdsRemoved() async => adsRemoved;
 
   @override
   Future<Package?> getRemoveAdsPackage() async => null;
@@ -32,7 +34,7 @@ class _FakePurchaseService implements PurchaseService {
   Future<bool> purchaseRemoveAds(Package package) async => false;
 
   @override
-  Future<bool> restorePurchases() async => adsRemoved;
+  Future<bool> restorePurchases() async => adsRemoved ?? false;
 }
 
 /// registerApp/reorder/removeApp が内部で呼ぶ永続化(_persist)がpath_providerの
@@ -518,6 +520,40 @@ void main() {
 
       expect(spyContainer.read(connectedAppsProvider), hasLength(2));
       expect(spyContainer.read(userPlanProvider), UserPlan.pro);
+    });
+
+    test('広告を消す購入状態が確認できない(null)場合、復元したUserPlan.proを'
+        'freeへ巻き戻さない(通信エラー等で購入済みユーザーに広告が復活するのを防ぐ)',
+        () async {
+      const persistedApp = ConnectedApp(
+        id: 'persisted-2',
+        userId: 'u1',
+        platform: PlatformType.android,
+        bundleIdOrPackageName: 'works.petit.persisted2',
+        apiKeyRef: 'persisted-2',
+        displayName: '購入済みユーザーのアプリ',
+        sortOrder: 0,
+      );
+      final spy = _SpyLocalStoreService(
+        initial: const LocalState(apps: [persistedApp], plan: UserPlan.pro),
+      );
+      final spyContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(spy),
+          // adsRemoved: null は「RevenueCat未設定・通信エラー等で確認不能」を表す。
+          purchaseServiceProvider
+              .overrideWithValue(_FakePurchaseService(adsRemoved: null)),
+        ],
+      );
+      addTearDown(spyContainer.dispose);
+
+      final saveCallCountBefore = spy.saveCallCount;
+      await spyContainer.read(appBootstrapProvider.future);
+
+      expect(spyContainer.read(userPlanProvider), UserPlan.pro);
+      // 補正自体が発生しない(setPlanが呼ばれない)ことも確認する。
+      expect(spy.saveCallCount, saveCallCountBefore);
     });
   });
 }

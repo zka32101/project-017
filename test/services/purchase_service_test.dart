@@ -13,10 +13,15 @@ void main() {
       await expectLater(service.initialize(), completes);
     });
 
-    test('未設定のままisAdsRemoved()はfalseを返す(プラットフォームチャネル未使用)', () async {
+    test('未設定のままisAdsRemoved()はnull(確認不能)を返す(プラットフォームチャネル未使用)',
+        () async {
+      // falseではなくnullを返すのが重要: 呼び出し側(appBootstrapProvider)が
+      // これを「確認した結果、未購入」と誤解してローカルの購入済みキャッシュを
+      // 上書きしないようにするため(詳細はPurchaseService.isAdsRemoved()の
+      // ドキュメントコメント参照)。
       final service = RevenueCatPurchaseService();
       await service.initialize();
-      expect(await service.isAdsRemoved(), isFalse);
+      expect(await service.isAdsRemoved(), isNull);
     });
 
     test('未設定のままgetRemoveAdsPackage()はnullを返す(プラットフォームチャネル未使用)',

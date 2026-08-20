@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/ad_service.dart';
 import '../services/app_store_connect_service.dart';
 import '../services/checklist_service.dart';
+import '../services/cloud_sync_service.dart';
 import '../services/local_store_service.dart';
 import '../services/notification_service.dart';
 import '../services/play_console_service.dart';
@@ -20,6 +21,11 @@ final secureStorageServiceProvider =
 
 final localStoreServiceProvider =
     Provider<LocalStoreService>((ref) => const LocalStoreService());
+
+/// ローカル永続化(LocalStoreService)のクラウドバックアップ(Firebase Auth
+/// 匿名認証 + Firestore)。main()でinitialize()を呼ぶ想定の実体。
+final cloudSyncServiceProvider =
+    Provider<CloudSyncService>((ref) => FirebaseCloudSyncService());
 
 final appStoreConnectServiceProvider = Provider<AppStoreConnectService>(
   (ref) => AppStoreConnectService(

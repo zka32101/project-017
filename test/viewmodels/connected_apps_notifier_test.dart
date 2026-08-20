@@ -5,6 +5,7 @@ import 'package:ririkan/models/connected_app.dart';
 import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/user_plan.dart';
+import 'package:ririkan/services/cloud_sync_service.dart';
 import 'package:ririkan/services/local_store_service.dart';
 import 'package:ririkan/services/purchase_service.dart';
 import 'package:ririkan/services/secure_storage_service.dart';
@@ -35,6 +36,29 @@ class _FakePurchaseService implements PurchaseService {
 
   @override
   Future<bool> restorePurchases() async => adsRemoved ?? false;
+}
+
+/// appBootstrapProviderのFirestore復元フォールバック・_persist()からの
+/// バックアップ呼び出しを検証するためのフェイク/スパイ。実CloudSyncService
+/// (Firebaseのプラットフォームチャネル)には一切触れない。
+class _FakeCloudSyncService implements CloudSyncService {
+  _FakeCloudSyncService({this.restoreValue});
+
+  final LocalState? restoreValue;
+  int backupCallCount = 0;
+  LocalState? lastBackedUp;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> backup(LocalState state) async {
+    backupCallCount++;
+    lastBackedUp = state;
+  }
+
+  @override
+  Future<LocalState?> restore() async => restoreValue;
 }
 
 /// registerApp/reorder/removeApp が内部で呼ぶ永続化(_persist)がpath_providerの
@@ -554,6 +578,115 @@ void main() {
       expect(spyContainer.read(userPlanProvider), UserPlan.pro);
       // 補正自体が発生しない(setPlanが呼ばれない)ことも確認する。
       expect(spy.saveCallCount, saveCallCountBefore);
+    });
+
+    test('ローカルに保存データが無い場合、Firestoreバックアップがあればそれを復元する'
+        '（デモアプリは投入しない）', () async {
+      const backedUpApp = ConnectedApp(
+        id: 'cloud-1',
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.cloud',
+        apiKeyRef: 'cloud-1',
+        displayName: 'クラウド復元アプリ',
+        sortOrder: 0,
+      );
+      final spyContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          // initialを渡さない=load()はnull(ローカルに保存データ無し)を返す。
+          localStoreServiceProvider.overrideWithValue(_SpyLocalStoreService()),
+          cloudSyncServiceProvider.overrideWithValue(
+            _FakeCloudSyncService(
+              restoreValue:
+                  const LocalState(apps: [backedUpApp], plan: UserPlan.pro),
+            ),
+          ),
+          purchaseServiceProvider
+              .overrideWithValue(_FakePurchaseService(adsRemoved: true)),
+        ],
+      );
+      addTearDown(spyContainer.dispose);
+
+      await spyContainer.read(appBootstrapProvider.future);
+
+      expect(
+        spyContainer.read(connectedAppsProvider).map((a) => a.id),
+        ['cloud-1'],
+      );
+      expect(spyContainer.read(userPlanProvider), UserPlan.pro);
+    });
+
+    test('ローカルに保存データがある場合はFirestoreバックアップの内容を無視し、ローカルを優先する',
+        () async {
+      const persistedApp = ConnectedApp(
+        id: 'local-wins',
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.local',
+        apiKeyRef: 'local-wins',
+        displayName: 'ローカル優先アプリ',
+        sortOrder: 0,
+      );
+      const wouldBeWrongCloudApp = ConnectedApp(
+        id: 'should-not-be-used',
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.wrong',
+        apiKeyRef: 'should-not-be-used',
+        displayName: '使われてはいけないアプリ',
+        sortOrder: 0,
+      );
+      final spy = _SpyLocalStoreService(
+        initial: const LocalState(apps: [persistedApp], plan: UserPlan.pro),
+      );
+      final spyContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(spy),
+          cloudSyncServiceProvider.overrideWithValue(
+            _FakeCloudSyncService(
+              restoreValue: const LocalState(
+                apps: [wouldBeWrongCloudApp],
+                plan: UserPlan.free,
+              ),
+            ),
+          ),
+          purchaseServiceProvider
+              .overrideWithValue(_FakePurchaseService(adsRemoved: true)),
+        ],
+      );
+      addTearDown(spyContainer.dispose);
+
+      await spyContainer.read(appBootstrapProvider.future);
+
+      expect(
+        spyContainer.read(connectedAppsProvider).map((a) => a.id),
+        ['local-wins'],
+      );
+    });
+  });
+
+  group('クラウドバックアップ(_persist経由)', () {
+    test('setPlan等、永続化を伴う操作のたびにCloudSyncService.backup()も呼ばれる',
+        () async {
+      final cloudSpy = _FakeCloudSyncService();
+      final spyContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(const _FakeLocalStoreService()),
+          cloudSyncServiceProvider.overrideWithValue(cloudSpy),
+        ],
+      );
+      addTearDown(spyContainer.dispose);
+
+      await spyContainer.read(connectedAppsProvider.notifier).setPlan(UserPlan.pro);
+      // backup()はローカル保存の完了を待たせないためfire-and-forget
+      // (unawaited)で呼ばれる。マイクロタスクを1回消化してから検証する。
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cloudSpy.backupCallCount, 1);
+      expect(cloudSpy.lastBackedUp?.plan, UserPlan.pro);
     });
   });
 }

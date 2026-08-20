@@ -1,4 +1,4 @@
-﻿name: ririkan
+name: ririkan
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -82,6 +82,15 @@ dependencies:
   # を使用する(REST APIベースの分析用RevenueCat連携とは別物、SDKキーも別)。
   google_mobile_ads: ^9.1.0
   purchases_flutter: ^9.5.4
+
+  # ローカル永続化(LocalStoreService)のクラウドバックアップ: Firebase Auth
+  # 匿名認証で発行されたUIDをドキュメントIDにFirestoreへ登録アプリ一覧・
+  # プランをバックアップする(lib/services/cloud_sync_service.dart参照)。
+  # ログイン画面は無く、複数端末間の同期も保証しない(同一インストール内での
+  # 復旧用途に限定)。
+  firebase_core: ^4.13.0
+  firebase_auth: ^6.5.7
+  cloud_firestore: ^6.8.0
 
 dev_dependencies:
   flutter_test:

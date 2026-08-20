@@ -1,0 +1,25 @@
+# 依存パッケージ(Dart/Flutter・Android Gradle・GitHub Actions)の脆弱性を
+# 自動検知し、更新PRを自動作成する設定（app-privacy-security チェックリスト対応）。
+# iOSはCocoaPods(Podfile)経由の依存だが、Dependabotは現状CocoaPodsを
+# 公式サポートしていないため対象外（Flutterプラグインのバージョンはpub側で
+# 追従されるため、実質的な脆弱性検知はpub/gradle/github-actionsでカバーされる）。
+
+version: 2
+updates:
+  # pubspec.yaml（Dart/Flutterパッケージ）
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # android/ 配下のGradle依存関係
+  - package-ecosystem: "gradle"
+    directory: "/android"
+    schedule:
+      interval: "weekly"
+
+  # .github/workflows/ 配下のActions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

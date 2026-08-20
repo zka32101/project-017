@@ -16,6 +16,14 @@ on:
       - main
   workflow_dispatch: {}
 
+# GITHUB_TOKENの既定権限（リポジトリ設定次第でread-write相当になり得る）に
+# 依存せず、このワークフローが実際に必要とする最小権限を明示する
+# （app-privacy-security チェックリスト: CI/CDのpermissions最小化）。
+# checkout・pub get・analyze・test・build・artifact upload のいずれも
+# リポジトリ内容の読み取りのみで完結し、書き込み権限は不要。
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build release APK

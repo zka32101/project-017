@@ -7,3 +7,8 @@
 /// 参照されるため、レイヤー間の依存を作らないよう独立したファイルに置く。
 const String demoIosAppId = 'demo-app-ios';
 const String demoAndroidAppId = 'demo-app-android';
+
+/// 指定のIDがいずれかのデモアプリのものかどうか。Service層の各メソッドが
+/// `id == demoIosAppId`のように個別に比較するのではなくここを参照することで、
+/// 将来デモアプリの種類が増えてもこの1箇所を直すだけで済むようにする。
+bool isDemoAppId(String id) => id == demoIosAppId || id == demoAndroidAppId;

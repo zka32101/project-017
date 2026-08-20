@@ -12,13 +12,8 @@ final latestReviewStatusProvider =
     FutureProvider.family<ReviewStatusSnapshot?, ConnectedApp>(
         (ref, app) async {
   final service = ref.watch(reviewStatusServiceProvider(app.platform));
-  final result = await service.fetchReviewStatus(app);
-  switch (result) {
-    case ServiceSuccess<List<ReviewStatusSnapshot>>(:final data):
-      return data.isEmpty ? null : data.first;
-    case ServiceFailure<List<ReviewStatusSnapshot>> failure:
-      throw ServiceFailureException(failure);
-  }
+  final data = (await service.fetchReviewStatus(app)).unwrap();
+  return data.isEmpty ? null : data.first;
 });
 
 /// ダッシュボード表示順（sortOrder昇順＝リリース間近のアプリを上部固定、Must#5）

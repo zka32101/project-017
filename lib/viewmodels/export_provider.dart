@@ -18,9 +18,12 @@ class ExportNotifier extends Notifier<AsyncValue<ExportJob>?> {
   }) async {
     state = const AsyncLoading();
     try {
-      final history = await ref.read(reviewHistoryProvider(app).future);
-      final rejections = await ref.read(rejectionDetailsProvider(app).future);
-      final buildFailures = await ref.read(buildFailureLogsProvider(app).future);
+      // 3つとも互いに依存しない独立した取得のため、直列にawaitせず並行実行する。
+      final (history, rejections, buildFailures) = await (
+        ref.read(reviewHistoryProvider(app).future),
+        ref.read(rejectionDetailsProvider(app).future),
+        ref.read(buildFailureLogsProvider(app).future),
+      ).wait;
       final now = DateTime.now();
 
       final job = await ref.read(exportServiceProvider).generate(
@@ -50,19 +53,22 @@ class ExportNotifier extends Notifier<AsyncValue<ExportJob>?> {
   }) async {
     state = const AsyncLoading();
     try {
-      final bundles = <AppExportBundle>[];
-      for (final app in apps) {
-        final history = await ref.read(reviewHistoryProvider(app).future);
-        final rejections = await ref.read(rejectionDetailsProvider(app).future);
-        final buildFailures =
-            await ref.read(buildFailureLogsProvider(app).future);
-        bundles.add(AppExportBundle(
+      // アプリ間・各アプリ内の3種類の取得はいずれも互いに独立しているため、
+      // 直列ループ(3×N回の逐次await)ではなく全アプリまとめて並行実行する。
+      // Future.waitは入力順で結果を返すため、bundlesの並び順はapps同様に保たれる。
+      final bundles = await Future.wait(apps.map((app) async {
+        final (history, rejections, buildFailures) = await (
+          ref.read(reviewHistoryProvider(app).future),
+          ref.read(rejectionDetailsProvider(app).future),
+          ref.read(buildFailureLogsProvider(app).future),
+        ).wait;
+        return AppExportBundle(
           app: app,
           reviewHistory: history,
           rejections: rejections,
           buildFailures: buildFailures,
-        ));
-      }
+        );
+      }));
       final now = DateTime.now();
 
       final job = await ref.read(exportServiceProvider).generateAll(

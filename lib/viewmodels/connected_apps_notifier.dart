@@ -223,18 +223,26 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
     await notifier.initializeDemoAppsIfNeeded();
   }
 
-  // 「広告を消す」purchaseの実際の状態(RevenueCat側)を正としてローカルの
-  // プラン表示を補正する。返金・サブスク失効等でローカルキャッシュ
-  // (LocalState.plan)が古いままになるのを防ぐため。
-  // isAdsRemoved()がnull(未設定・ネットワークエラー等で確認不能)の場合は
-  // 補正しない。ここでnullをfalse扱いしてしまうと、実際に購入済みの
-  // ユーザーが一時的な通信エラーに遭遇しただけで「未購入」に巻き戻り、
-  // 広告が復活してしまう(=お金を払ったのに広告が出る)重大な不具合になる。
-  final adsRemoved = await ref.read(purchaseServiceProvider).isAdsRemoved();
-  if (adsRemoved != null) {
-    final reconciledPlan = adsRemoved ? UserPlan.pro : UserPlan.free;
-    if (reconciledPlan != ref.read(userPlanProvider)) {
-      await notifier.setPlan(reconciledPlan);
-    }
-  }
+  await reconcilePlanWithPurchaseState(ref);
 });
+
+/// 「広告を消す」purchaseの実際の状態(RevenueCat側)を正としてローカルの
+/// プラン表示を補正する。返金・サブスク失効等でローカルキャッシュ
+/// (LocalState.plan)が古いままになるのを防ぐため。
+/// isAdsRemoved()がnull(未設定・ネットワークエラー等で確認不能)の場合は
+/// 補正しない。ここでnullをfalse扱いしてしまうと、実際に購入済みの
+/// ユーザーが一時的な通信エラーに遭遇しただけで「未購入」に巻き戻り、
+/// 広告が復活してしまう(=お金を払ったのに広告が出る)重大な不具合になる。
+///
+/// appBootstrapProvider（起動時1回）専属にせず独立した関数にしてあるのは、
+/// 将来的に「バックグラウンドから復帰した時」「PaywallScreenでの
+/// restorePurchases成功後」等、起動フロー全体を再実行せずにこの補正だけを
+/// 単独で呼び出したいケースが増えても対応できるようにするため。
+Future<void> reconcilePlanWithPurchaseState(Ref ref) async {
+  final adsRemoved = await ref.read(purchaseServiceProvider).isAdsRemoved();
+  if (adsRemoved == null) return;
+  final reconciledPlan = adsRemoved ? UserPlan.pro : UserPlan.free;
+  if (reconciledPlan != ref.read(userPlanProvider)) {
+    await ref.read(connectedAppsProvider.notifier).setPlan(reconciledPlan);
+  }
+}

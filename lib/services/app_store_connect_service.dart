@@ -43,57 +43,49 @@ class AppStoreConnectService implements ReviewStatusService {
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
     ConnectedApp app,
   ) async {
-    if (app.id == demoIosAppId) {
+    if (isDemoAppId(app.id)) {
       return ServiceSuccess(_mock.reviewStatusesFor(app.id, app.platform));
     }
-    try {
+    return guardServiceCall(ServiceFailureReason.reviewStatus, () async {
       final credential = await _secureStorage.readApiKey(app.id);
       if (credential == null || credential.isEmpty) {
-        return const ServiceFailure(ServiceFailureReason.reviewStatus);
+        throw StateError('APIキーが登録されていません');
       }
       final snapshot = await _apiClient.fetchLatestReviewStatus(
         credentialJson: credential,
         bundleId: app.bundleIdOrPackageName,
         connectedAppId: app.id,
       );
-      return ServiceSuccess(snapshot == null ? [] : [snapshot]);
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.reviewStatus, cause: e);
-    }
+      return snapshot == null ? <ReviewStatusSnapshot>[] : [snapshot];
+    });
   }
 
   @override
   Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
     ConnectedApp app,
-  ) async {
-    try {
-      return ServiceSuccess(_mock.rejectionsFor(app.id));
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.rejectionDetails, cause: e);
-    }
-  }
+  ) =>
+      guardServiceCall(
+        ServiceFailureReason.rejectionDetails,
+        () async => _mock.rejectionsFor(app.id),
+      );
 
   @override
   Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
     ConnectedApp app,
-  ) async {
-    try {
-      return ServiceSuccess(_mock.buildFailuresFor(app.id, app.platform));
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.buildFailureLogs, cause: e);
-    }
-  }
+  ) =>
+      guardServiceCall(
+        ServiceFailureReason.buildFailureLogs,
+        () async => _mock.buildFailuresFor(app.id, app.platform),
+      );
 
   @override
   Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
     ConnectedApp app,
-  ) async {
-    try {
-      return ServiceSuccess(_mock.crashSummariesFor(app.id));
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.crashSummaries, cause: e);
-    }
-  }
+  ) =>
+      guardServiceCall(
+        ServiceFailureReason.crashSummaries,
+        () async => _mock.crashSummariesFor(app.id),
+      );
 
   /// apiKey には {"issuerId", "keyId", "privateKey"} をJSON化した文字列を渡すこと
   /// (AppRegistrationScreenの3つの入力欄から組み立てられる)。
@@ -101,12 +93,9 @@ class AppStoreConnectService implements ReviewStatusService {
   Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
     String apiKey, {
     List<String> knownPackageNames = const [],
-  }) async {
-    try {
-      final apps = await _apiClient.listApps(apiKey);
-      return ServiceSuccess(apps);
-    } catch (e) {
-      return ServiceFailure(ServiceFailureReason.appDiscovery, cause: e);
-    }
-  }
+  }) =>
+      guardServiceCall(
+        ServiceFailureReason.appDiscovery,
+        () => _apiClient.listApps(apiKey),
+      );
 }

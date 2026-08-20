@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/connected_app.dart';
-import '../models/review_status_snapshot.dart';
 import '../services/widget_sync_service.dart';
 import 'dashboard_providers.dart';
 
@@ -14,22 +13,26 @@ final widgetSyncProvider = FutureProvider<void>((ref) async {
   final apps = ref.watch(sortedConnectedAppsProvider);
   final service = ref.watch(widgetSyncServiceProvider);
 
+  // latestReviewStatusProvider は取得失敗時に例外を投げるようになったが、
+  // ウィジェット同期は「失敗しても画面表示は継続」がこの機能の設計方針のため、
+  // 1アプリの取得失敗で他アプリの集計まで止めないようここで吸収する。
+  // 各アプリの取得は互いに独立しているため、initial_scan_provider.dartと
+  // 同様にFuture.waitで並行実行する（直列awaitだとアプリ数に比例して遅くなる）。
+  final statuses = await Future.wait(apps.map((app) async {
+    try {
+      return await ref.watch(latestReviewStatusProvider(app).future);
+    } catch (_) {
+      return null;
+    }
+  }));
+
   ConnectedApp? topAttentionApp;
   var attentionCount = 0;
-
-  for (final app in apps) {
-    // latestReviewStatusProvider は取得失敗時に例外を投げるようになったが、
-    // ウィジェット同期は「失敗しても画面表示は継続」がこの機能の設計方針のため、
-    // 1アプリの取得失敗で他アプリの集計まで止めないようここで吸収する。
-    ReviewStatusSnapshot? statusAsync;
-    try {
-      statusAsync = await ref.watch(latestReviewStatusProvider(app).future);
-    } catch (_) {
-      continue;
-    }
-    if (statusAsync != null && service.isAttentionStatus(statusAsync.statusType)) {
+  for (var i = 0; i < apps.length; i++) {
+    final status = statuses[i];
+    if (status != null && service.isAttentionStatus(status.statusType)) {
       attentionCount++;
-      topAttentionApp ??= app;
+      topAttentionApp ??= apps[i];
     }
   }
 

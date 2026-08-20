@@ -9,10 +9,6 @@ import 'service_result.dart';
 /// App Store Connect / Play Console 共通インターフェース。
 /// 実装は AppStoreConnectService（Webhooks中継）と PlayConsoleService（MVPはポーリング、条件1準拠）。
 abstract class ReviewStatusService {
-  /// タイムアウト10秒・リトライ3回（設計書 Step5）を実装側で必ず守ること。
-  static const Duration timeout = Duration(seconds: 10);
-  static const int maxRetries = 3;
-
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
     ConnectedApp app,
   );

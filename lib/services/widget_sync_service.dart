@@ -34,16 +34,19 @@ class WidgetSyncService {
     required int attentionCount,
     required ConnectedApp? topAttentionApp,
   }) async {
-    await HomeWidget.saveWidgetData<int>(_keyAppCount, totalApps);
-    await HomeWidget.saveWidgetData<int>(_keyAttentionCount, attentionCount);
-    await HomeWidget.saveWidgetData<String>(
-      _keyLatestSummary,
-      topAttentionApp == null ? '' : topAttentionApp.displayName,
-    );
-    await HomeWidget.saveWidgetData<String>(
-      _keyUpdatedAt,
-      DateTime.now().toIso8601String(),
-    );
+    // 4つとも独立したキーへの書き込みのため、直列awaitではなくまとめて並行実行する。
+    await Future.wait([
+      HomeWidget.saveWidgetData<int>(_keyAppCount, totalApps),
+      HomeWidget.saveWidgetData<int>(_keyAttentionCount, attentionCount),
+      HomeWidget.saveWidgetData<String>(
+        _keyLatestSummary,
+        topAttentionApp == null ? '' : topAttentionApp.displayName,
+      ),
+      HomeWidget.saveWidgetData<String>(
+        _keyUpdatedAt,
+        DateTime.now().toIso8601String(),
+      ),
+    ]);
 
     await HomeWidget.updateWidget(
       androidName: 'RirikanStatusWidgetProvider',

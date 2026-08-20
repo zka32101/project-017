@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/review_status_snapshot.dart';
 import '../models/review_status_type.dart';
+import 'google_service_account_oauth.dart';
 
 /// Google Play Developer APIへの認証・通信失敗を表す例外。
 /// メッセージは開発者向けの詳細情報であり、UI側は
@@ -42,7 +42,6 @@ class AndroidPublisherApiClient {
 
   final http.Client _httpClient;
 
-  static const _oauthTokenUrl = 'https://oauth2.googleapis.com/token';
   static const _apiBaseUrl =
       'https://androidpublisher.googleapis.com/androidpublisher/v3';
   static const _scope = 'https://www.googleapis.com/auth/androidpublisher';
@@ -79,73 +78,16 @@ class AndroidPublisherApiClient {
     );
   }
 
-  Future<String> _fetchAccessToken(String serviceAccountJson) async {
-    final Map<String, dynamic> creds;
-    try {
-      creds = jsonDecode(serviceAccountJson) as Map<String, dynamic>;
-    } catch (e) {
-      throw const AndroidPublisherAuthException(
-        'サービスアカウントJSONキーの形式が不正です',
+  // JWT組み立て〜oauth2/tokenへのPOSTはPlayDeveloperReportingApiClientと
+  // 完全に共通の手順のため、google_service_account_oauth.dartへ切り出してある
+  // (詳細な手順のコメントはそちらを参照)。
+  Future<String> _fetchAccessToken(String serviceAccountJson) =>
+      fetchGoogleServiceAccountAccessToken(
+        serviceAccountJson: serviceAccountJson,
+        scope: _scope,
+        httpClient: _httpClient,
+        exceptionBuilder: (message) => AndroidPublisherAuthException(message),
       );
-    }
-    final clientEmail = creds['client_email'] as String?;
-    final privateKeyPem = creds['private_key'] as String?;
-    if (clientEmail == null ||
-        clientEmail.isEmpty ||
-        privateKeyPem == null ||
-        privateKeyPem.isEmpty) {
-      throw const AndroidPublisherAuthException(
-        'サービスアカウントJSONキーに client_email / private_key が含まれていません',
-      );
-    }
-
-    final RSAPrivateKey key;
-    try {
-      key = RSAPrivateKey(privateKeyPem);
-    } catch (e) {
-      throw AndroidPublisherAuthException('サービスアカウントの秘密鍵の形式が不正です: $e');
-    }
-
-    // scopeはJWT標準クレームではないため、payload(カスタムクレーム)として
-    // 直接含める(OAuth2 JWT Bearer Token Flowの仕様、RFC 7523)。
-    final jwt = JWT(
-      {'scope': _scope},
-      issuer: clientEmail,
-      subject: clientEmail,
-      audience: Audience.one(_oauthTokenUrl),
-    );
-    final signed = jwt.sign(
-      key,
-      algorithm: JWTAlgorithm.RS256,
-      expiresIn: const Duration(hours: 1),
-    );
-
-    final http.Response response;
-    try {
-      response = await _httpClient.post(
-        Uri.parse(_oauthTokenUrl),
-        body: {
-          'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          'assertion': signed,
-        },
-      ).timeout(const Duration(seconds: 10));
-    } catch (e) {
-      throw AndroidPublisherAuthException('Googleの認証サーバーへの接続に失敗しました: $e');
-    }
-
-    if (response.statusCode != 200) {
-      throw AndroidPublisherAuthException(
-        'アクセストークンの取得に失敗しました(HTTP ${response.statusCode})。'
-        'サービスアカウントJSONキーの内容と権限を確認してください。',
-      );
-    }
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final token = body['access_token'] as String?;
-    if (token == null || token.isEmpty) {
-      throw const AndroidPublisherAuthException('アクセストークンの応答形式が不正です');
-    }
-    return token;
-  }
 
   Future<String> _insertEdit(String packageName, String accessToken) async {
     final uri = Uri.parse('$_apiBaseUrl/applications/$packageName/edits');

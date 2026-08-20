@@ -4,7 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/gen/app_localizations.dart';
 import '../../l10n/service_failure_l10n.dart';
+import '../../models/build_failure_log.dart';
 import '../../models/connected_app.dart';
+import '../../models/crash_summary.dart';
+import '../../models/rejection_detail.dart';
+import '../../models/review_status_snapshot.dart';
 import '../../models/revenue_summary.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/app_detail_providers.dart';
@@ -88,46 +92,72 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen>
   }
 }
 
+/// AsyncValue&lt;List&lt;T&gt;&gt;を受け取り、loading/error/empty/dataの4状態を
+/// まとめて表示する共通タブWidget。アプリ詳細画面の5タブが同じ
+/// `.when(loading: ..., error: ..., data: (items) => items.isEmpty ? ... : ...)`
+/// を個別に書いていたため、可変部分(プロバイダの参照・空メッセージ・非空時の
+/// 表示)だけを引数として受け取る形にまとめてある。
+class _AsyncListTab<T> extends ConsumerWidget {
+  final AsyncValue<List<T>> Function(WidgetRef ref) watch;
+  final void Function(WidgetRef ref) invalidate;
+  final String Function(AppLocalizations l10n) emptyMessage;
+  final Widget Function(BuildContext context, AppLocalizations l10n, List<T> items)
+      dataBuilder;
+
+  const _AsyncListTab({
+    required this.watch,
+    required this.invalidate,
+    required this.emptyMessage,
+    required this.dataBuilder,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return watch(ref).when(
+      data: (items) => items.isEmpty
+          ? _EmptyTab(message: emptyMessage(l10n))
+          : dataBuilder(context, l10n, items),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _ErrorTab(error: e, onRetry: () => invalidate(ref)),
+    );
+  }
+}
+
 class _ReviewHistoryTab extends ConsumerWidget {
   final ConnectedApp app;
   const _ReviewHistoryTab({required this.app});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final history = ref.watch(reviewHistoryProvider(app));
-    return history.when(
-      data: (items) => items.isEmpty
-          ? _EmptyTab(message: l10n.appDetailReviewHistoryEmpty)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                final s = items[i];
-                return Card(
-                  child: ListTile(
-                    leading: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppTheme.colorForStatusKey(s.statusType.name),
-                      ),
-                    ),
-                    title: Text('v${s.versionString}'),
-                    subtitle: Text(s.statusType.label(l10n)),
-                    trailing: Text(
-                      '${s.fetchedAt.month}/${s.fetchedAt.day}',
-                      style: const TextStyle(color: AppTheme.textSecondary),
-                    ),
-                  ),
-                );
-              },
+    return _AsyncListTab<ReviewStatusSnapshot>(
+      watch: (ref) => ref.watch(reviewHistoryProvider(app)),
+      invalidate: (ref) => ref.invalidate(reviewHistoryProvider(app)),
+      emptyMessage: (l10n) => l10n.appDetailReviewHistoryEmpty,
+      dataBuilder: (context, l10n, items) => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        itemBuilder: (context, i) {
+          final s = items[i];
+          return Card(
+            child: ListTile(
+              leading: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.colorForStatus(s.statusType),
+                ),
+              ),
+              title: Text('v${s.versionString}'),
+              subtitle: Text(s.statusType.label(l10n)),
+              trailing: Text(
+                '${s.fetchedAt.month}/${s.fetchedAt.day}',
+                style: const TextStyle(color: AppTheme.textSecondary),
+              ),
             ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorTab(
-        error: e,
-        onRetry: () => ref.invalidate(reviewHistoryProvider(app)),
+          );
+        },
       ),
     );
   }
@@ -139,31 +169,25 @@ class _CrashTrendTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final crashes = ref.watch(crashSummariesProvider(app));
-    return crashes.when(
-      data: (items) => items.isEmpty
-          ? _EmptyTab(message: l10n.appDetailCrashDataEmpty)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                final c = items[i];
-                return ListTile(
-                  leading: Icon(
-                    c.isSpiking() ? Icons.warning_amber : Icons.check_circle_outline,
-                    color: c.isSpiking() ? AppTheme.danger : AppTheme.primary,
-                  ),
-                  title: Text('${c.date.month}/${c.date.day}'),
-                  subtitle: Text(l10n.appDetailCrashFreeRate(
-                      c.crashFreeRate.toStringAsFixed(1), c.crashCount)),
-                );
-              },
+    return _AsyncListTab<CrashSummary>(
+      watch: (ref) => ref.watch(crashSummariesProvider(app)),
+      invalidate: (ref) => ref.invalidate(crashSummariesProvider(app)),
+      emptyMessage: (l10n) => l10n.appDetailCrashDataEmpty,
+      dataBuilder: (context, l10n, items) => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        itemBuilder: (context, i) {
+          final c = items[i];
+          return ListTile(
+            leading: Icon(
+              c.isSpiking() ? Icons.warning_amber : Icons.check_circle_outline,
+              color: c.isSpiking() ? AppTheme.danger : AppTheme.primary,
             ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorTab(
-        error: e,
-        onRetry: () => ref.invalidate(crashSummariesProvider(app)),
+            title: Text('${c.date.month}/${c.date.day}'),
+            subtitle: Text(l10n.appDetailCrashFreeRate(
+                c.crashFreeRate.toStringAsFixed(1), c.crashCount)),
+          );
+        },
       ),
     );
   }
@@ -175,17 +199,11 @@ class _RevenueTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final revenue = ref.watch(revenueSummaryProvider(app));
-    return revenue.when(
-      data: (items) => items.isEmpty
-          ? _EmptyTab(message: l10n.appDetailRevenueEmpty)
-          : _RevenueList(items: items),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorTab(
-        error: e,
-        onRetry: () => ref.invalidate(revenueSummaryProvider(app)),
-      ),
+    return _AsyncListTab<RevenueSummary>(
+      watch: (ref) => ref.watch(revenueSummaryProvider(app)),
+      invalidate: (ref) => ref.invalidate(revenueSummaryProvider(app)),
+      emptyMessage: (l10n) => l10n.appDetailRevenueEmpty,
+      dataBuilder: (context, l10n, items) => _RevenueList(items: items),
     );
   }
 }
@@ -275,30 +293,24 @@ class _RejectionTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final rejections = ref.watch(rejectionDetailsProvider(app));
-    return rejections.when(
-      data: (items) => items.isEmpty
-          ? _EmptyTab(message: l10n.appDetailRejectionEmpty)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                final r = items[i];
-                return Card(
-                  child: ListTile(
-                    title: Text(r.guidelineTitle ??
-                        r.guidelineNumber ??
-                        l10n.appDetailRejectionUnknownReason),
-                    subtitle: Text(r.resolutionCenterMessage),
-                  ),
-                );
-              },
+    return _AsyncListTab<RejectionDetail>(
+      watch: (ref) => ref.watch(rejectionDetailsProvider(app)),
+      invalidate: (ref) => ref.invalidate(rejectionDetailsProvider(app)),
+      emptyMessage: (l10n) => l10n.appDetailRejectionEmpty,
+      dataBuilder: (context, l10n, items) => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        itemBuilder: (context, i) {
+          final r = items[i];
+          return Card(
+            child: ListTile(
+              title: Text(r.guidelineTitle ??
+                  r.guidelineNumber ??
+                  l10n.appDetailRejectionUnknownReason),
+              subtitle: Text(r.resolutionCenterMessage),
             ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorTab(
-        error: e,
-        onRetry: () => ref.invalidate(rejectionDetailsProvider(app)),
+          );
+        },
       ),
     );
   }
@@ -310,28 +322,22 @@ class _BuildFailureTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final logs = ref.watch(buildFailureLogsProvider(app));
-    return logs.when(
-      data: (items) => items.isEmpty
-          ? _EmptyTab(message: l10n.appDetailBuildFailureEmpty)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                final b = items[i];
-                return Card(
-                  child: ListTile(
-                    title: Text(l10n.appDetailBuildNumber(b.buildNumber)),
-                    subtitle: Text(b.failureReason),
-                  ),
-                );
-              },
+    return _AsyncListTab<BuildFailureLog>(
+      watch: (ref) => ref.watch(buildFailureLogsProvider(app)),
+      invalidate: (ref) => ref.invalidate(buildFailureLogsProvider(app)),
+      emptyMessage: (l10n) => l10n.appDetailBuildFailureEmpty,
+      dataBuilder: (context, l10n, items) => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        itemBuilder: (context, i) {
+          final b = items[i];
+          return Card(
+            child: ListTile(
+              title: Text(l10n.appDetailBuildNumber(b.buildNumber)),
+              subtitle: Text(b.failureReason),
             ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorTab(
-        error: e,
-        onRetry: () => ref.invalidate(buildFailureLogsProvider(app)),
+          );
+        },
       ),
     );
   }

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/gen/app_localizations.dart';
-import '../../models/discoverable_app.dart';
+import '../../l10n/service_failure_l10n.dart';
 import '../../models/platform_type.dart';
 import '../../services/service_result.dart';
 import '../../theme/app_theme.dart';
@@ -93,15 +93,11 @@ class _AppRegistrationScreenState
             })
           : _apiKeyController.text.trim();
 
-      final result = await service.discoverApps(
+      final discovered = (await service.discoverApps(
         apiKeyPayload,
         knownPackageNames: isIos ? const [] : _packageNames,
-      );
-      final discovered = switch (result) {
-        ServiceSuccess<List<DiscoverableApp>>(:final data) => data,
-        ServiceFailure<List<DiscoverableApp>> failure =>
-          throw ServiceFailureException(failure),
-      };
+      ))
+          .unwrap();
 
       if (discovered.isEmpty) {
         if (!mounted) return;
@@ -124,7 +120,7 @@ class _AppRegistrationScreenState
       // なったりしないようにする。
       if (!mounted) return;
       setState(() => _submitting = false);
-      _showSnack(l10n.appRegistrationFailed('$e'));
+      _showSnack(l10n.appRegistrationFailed(localizedErrorMessage(l10n, e)));
     }
   }
 

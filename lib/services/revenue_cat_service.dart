@@ -31,7 +31,7 @@ class RevenueCatService {
     ConnectedApp app, {
     int days = 30,
   }) async {
-    if (app.id == demoIosAppId || app.id == demoAndroidAppId) {
+    if (isDemoAppId(app.id)) {
       return ServiceSuccess(_mock.revenueFor(app.id, days: days));
     }
     final oauth = _oauth;

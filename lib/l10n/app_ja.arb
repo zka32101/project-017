@@ -8,6 +8,7 @@
   "commonAppNotFound": "アプリが見つかりません",
   "commonCancel": "キャンセル",
   "commonDelete": "削除",
+  "commonSelect": "選択",
 
   "dashboardEmptyMessage": "まだ登録アプリがありません",
   "dashboardAddApp": "アプリを追加",
@@ -85,6 +86,28 @@
   "appDetailBuildNumber": "Build {number}",
   "@appDetailBuildNumber": {
     "placeholders": {"number": {"type": "String"}}
+  },
+
+  "appDetailTabManagement": "管理",
+  "appDetailManagementStatusSectionTitle": "審査状態",
+  "appDetailManagementAutoStatusValue": "自動取得された状態: {status}",
+  "@appDetailManagementAutoStatusValue": {
+    "placeholders": {"status": {"type": "String"}}
+  },
+  "appDetailManagementManualStatusLabel": "手動でのステータス上書き",
+  "appDetailManagementAutoOption": "自動（上書きしない）",
+  "appDetailManagementManualOverrideHint": "次回の自動取得が成功すると、この上書きは自動的に解除されます。",
+  "appDetailManagementDatesLabel": "日付管理",
+  "appDetailManagementSubmittedAtLabel": "審査提出日",
+  "appDetailManagementReviewStartedAtLabel": "審査開始日",
+  "appDetailManagementDateNotSet": "未設定",
+  "appDetailManagementClearDate": "クリア",
+  "appDetailManagementNoteLabel": "メモ・対応履歴",
+  "appDetailManagementNoteHint": "サポートへの問い合わせ内容や対応メモを記録できます",
+
+  "dashboardManualStatusSuffix": "{status}（手動）",
+  "@dashboardManualStatusSuffix": {
+    "placeholders": {"status": {"type": "String"}}
   },
 
   "errorReviewStatusFetchFailed": "審査状態の取得に失敗しました",

@@ -24,6 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonDelete => 'Delete';
 
   @override
+  String get commonSelect => 'Select';
+
+  @override
   String get dashboardEmptyMessage => 'No apps registered yet';
 
   @override
@@ -203,6 +206,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String appDetailBuildNumber(String number) {
     return 'Build $number';
+  }
+
+  @override
+  String get appDetailTabManagement => 'Management';
+
+  @override
+  String get appDetailManagementStatusSectionTitle => 'Review Status';
+
+  @override
+  String appDetailManagementAutoStatusValue(String status) {
+    return 'Automatically fetched status: $status';
+  }
+
+  @override
+  String get appDetailManagementManualStatusLabel => 'Manual Status Override';
+
+  @override
+  String get appDetailManagementAutoOption => 'Automatic (no override)';
+
+  @override
+  String get appDetailManagementManualOverrideHint =>
+      'This override will be cleared automatically the next time an automatic fetch succeeds.';
+
+  @override
+  String get appDetailManagementDatesLabel => 'Dates';
+
+  @override
+  String get appDetailManagementSubmittedAtLabel => 'Submitted for Review';
+
+  @override
+  String get appDetailManagementReviewStartedAtLabel => 'Review Started';
+
+  @override
+  String get appDetailManagementDateNotSet => 'Not set';
+
+  @override
+  String get appDetailManagementClearDate => 'Clear';
+
+  @override
+  String get appDetailManagementNoteLabel => 'Notes / History';
+
+  @override
+  String get appDetailManagementNoteHint =>
+      'Record support inquiries or follow-up notes here';
+
+  @override
+  String dashboardManualStatusSuffix(String status) {
+    return '$status (Manual)';
   }
 
   @override

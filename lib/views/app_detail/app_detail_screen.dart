@@ -4,17 +4,21 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/gen/app_localizations.dart';
 import '../../l10n/service_failure_l10n.dart';
+import '../../models/app_review_management.dart';
 import '../../models/build_failure_log.dart';
 import '../../models/connected_app.dart';
 import '../../models/crash_summary.dart';
 import '../../models/rejection_detail.dart';
 import '../../models/review_status_snapshot.dart';
+import '../../models/review_status_type.dart';
 import '../../models/revenue_summary.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/app_detail_providers.dart';
+import '../../viewmodels/app_review_management_notifier.dart';
+import '../../viewmodels/dashboard_providers.dart';
 
-/// アプリ詳細: 審査履歴/クラッシュ推移/売上・DL数/リジェクト理由/ビルド失敗ログの5タブ
-/// （Must#1拡張＋Should機能の売上サマリー）。
+/// アプリ詳細: 審査履歴/クラッシュ推移/売上・DL数/リジェクト理由/ビルド失敗ログ/管理の6タブ
+/// （Must#1拡張＋Should機能の売上サマリー・管理項目）。
 /// initialTabIndexで初期表示タブを指定できる(設計書Step2は「リジェクト通知
 /// タップでリジェクト理由タブを開く」導線を想定しているが、現状の
 /// NotificationService はタップ時のハンドラを持たない固定文言の毎朝リマインダー
@@ -38,7 +42,7 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 5,
+      length: 6,
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
@@ -79,6 +83,7 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen>
             Tab(text: l10n.appDetailTabRevenue),
             Tab(text: l10n.appDetailTabRejection),
             Tab(text: l10n.appDetailTabBuildFailure),
+            Tab(text: l10n.appDetailTabManagement),
           ],
         ),
       ),
@@ -90,6 +95,7 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen>
           _RevenueTab(app: app),
           _RejectionTab(app: app),
           _BuildFailureTab(app: app),
+          _ManagementTab(app: app),
         ],
       ),
     );
@@ -342,6 +348,305 @@ class _BuildFailureTab extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// 管理タブ: 審査状態の手動上書き・審査提出日/審査開始日・メモ（対応履歴）。
+/// AppReviewManagementのドキュメントコメント参照。
+class _ManagementTab extends ConsumerStatefulWidget {
+  final ConnectedApp app;
+  const _ManagementTab({required this.app});
+
+  @override
+  ConsumerState<_ManagementTab> createState() => _ManagementTabState();
+}
+
+class _ManagementTabState extends ConsumerState<_ManagementTab> {
+  final _noteController = TextEditingController();
+  final _noteFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _noteFocusNode.addListener(_onNoteFocusChange);
+  }
+
+  void _onNoteFocusChange() {
+    if (!_noteFocusNode.hasFocus) {
+      ref
+          .read(appReviewManagementProvider(widget.app.id).notifier)
+          .setNote(_noteController.text);
+    }
+  }
+
+  @override
+  void dispose() {
+    _noteFocusNode.removeListener(_onNoteFocusChange);
+    _noteFocusNode.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final appId = widget.app.id;
+
+    // 永続化データの復元(初回のみ)。checklist_screen.dartと同じパターンで
+    // bareにwatchする(復元完了を明示的に待つ必要は無く、失敗してもこの
+    // タブ自体はクラッシュしない)。
+    ref.watch(appReviewManagementBootstrapProvider(appId));
+
+    // ノート欄はTextEditingControllerで自前管理しているため、復元完了時
+    // (build()の外でnotifier.restore()が呼ばれた時)だけテキストを同期する。
+    // 毎キー入力でstateへ書き込む設計ではない(setNoteはフォーカスが外れた
+    // 時にしか呼ばれない)ため、ユーザー入力中にこのlistenがカーソル位置を
+    // リセットすることは無い。
+    ref.listen<AppReviewManagement>(
+      appReviewManagementProvider(appId),
+      (previous, next) {
+        if (_noteController.text != next.note) {
+          _noteController.text = next.note;
+        }
+      },
+    );
+
+    final management = ref.watch(appReviewManagementProvider(appId));
+    final autoStatus = ref.watch(latestReviewStatusProvider(widget.app));
+    final notifier = ref.read(appReviewManagementProvider(appId).notifier);
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _ManualStatusCard(
+          l10n: l10n,
+          autoStatus: autoStatus,
+          management: management,
+          onChanged: notifier.setManualStatusOverride,
+        ),
+        const SizedBox(height: 16),
+        _DateManagementCard(
+          l10n: l10n,
+          management: management,
+          onSubmittedAtChanged: notifier.setSubmittedAt,
+          onReviewStartedAtChanged: notifier.setReviewStartedAt,
+        ),
+        const SizedBox(height: 16),
+        _NoteCard(
+          l10n: l10n,
+          controller: _noteController,
+          focusNode: _noteFocusNode,
+        ),
+      ],
+    );
+  }
+}
+
+class _ManualStatusCard extends StatelessWidget {
+  final AppLocalizations l10n;
+  final AsyncValue<ReviewStatusSnapshot?> autoStatus;
+  final AppReviewManagement management;
+  final ValueChanged<ReviewStatusType?> onChanged;
+
+  const _ManualStatusCard({
+    required this.l10n,
+    required this.autoStatus,
+    required this.management,
+    required this.onChanged,
+  });
+
+  String get _autoStatusLabel => autoStatus.when(
+        data: (s) =>
+            s == null ? l10n.dashboardStatusUnknown : s.statusType.label(l10n),
+        loading: () => l10n.dashboardStatusLoading,
+        error: (_, _) => l10n.dashboardStatusUnknown,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.appDetailManagementStatusSectionTitle,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(
+              l10n.appDetailManagementAutoStatusValue(_autoStatusLabel),
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            // 手動上書きが外部要因(次回自動取得の成功時のクリア・復元完了)で
+            // 変わった場合、DropdownButtonFormFieldのinitialValueは初回構築時
+            // にしか反映されない(FormFieldの仕様)ため、値が変わるたびにkeyを
+            // 変えてウィジェット自体を作り直し、表示を確実に同期させる。
+            DropdownButtonFormField<ReviewStatusType?>(
+              key: ValueKey(management.manualStatusOverride),
+              initialValue: management.manualStatusOverride,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: l10n.appDetailManagementManualStatusLabel,
+                isDense: true,
+              ),
+              items: [
+                DropdownMenuItem(
+                  child: Text(l10n.appDetailManagementAutoOption),
+                ),
+                for (final type in ReviewStatusType.values)
+                  DropdownMenuItem(
+                    value: type,
+                    child: Text(type.label(l10n)),
+                  ),
+              ],
+              onChanged: onChanged,
+            ),
+            if (management.manualStatusOverride != null) ...[
+              const SizedBox(height: 8),
+              Text(l10n.appDetailManagementManualOverrideHint,
+                  style: const TextStyle(color: AppTheme.warning, fontSize: 12)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DateManagementCard extends StatelessWidget {
+  final AppLocalizations l10n;
+  final AppReviewManagement management;
+  final ValueChanged<DateTime?> onSubmittedAtChanged;
+  final ValueChanged<DateTime?> onReviewStartedAtChanged;
+
+  const _DateManagementCard({
+    required this.l10n,
+    required this.management,
+    required this.onSubmittedAtChanged,
+    required this.onReviewStartedAtChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.appDetailManagementDatesLabel,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            _DateRow(
+              label: l10n.appDetailManagementSubmittedAtLabel,
+              value: management.submittedAt,
+              onChanged: onSubmittedAtChanged,
+            ),
+            const Divider(height: 24),
+            _DateRow(
+              label: l10n.appDetailManagementReviewStartedAtLabel,
+              value: management.reviewStartedAt,
+              onChanged: onReviewStartedAtChanged,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DateRow extends StatelessWidget {
+  final String label;
+  final DateTime? value;
+  final ValueChanged<DateTime?> onChanged;
+
+  const _DateRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final date = value;
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style:
+                      const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+              const SizedBox(height: 2),
+              Text(date == null
+                  ? l10n.appDetailManagementDateNotSet
+                  : '${date.year}/${date.month}/${date.day}'),
+            ],
+          ),
+        ),
+        if (date != null)
+          IconButton(
+            icon: const Icon(Icons.clear, size: 20),
+            tooltip: l10n.appDetailManagementClearDate,
+            onPressed: () => onChanged(null),
+          ),
+        TextButton(
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: date ?? DateTime.now(),
+              firstDate: DateTime(2015),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+            );
+            if (picked != null) onChanged(picked);
+          },
+          child: Text(l10n.commonSelect),
+        ),
+      ],
+    );
+  }
+}
+
+class _NoteCard extends StatelessWidget {
+  final AppLocalizations l10n;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+
+  const _NoteCard({
+    required this.l10n,
+    required this.controller,
+    required this.focusNode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.appDetailManagementNoteLabel,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              focusNode: focusNode,
+              maxLines: 6,
+              minLines: 3,
+              decoration: InputDecoration(
+                hintText: l10n.appDetailManagementNoteHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

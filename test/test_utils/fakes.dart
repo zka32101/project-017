@@ -5,6 +5,7 @@
 // 例外になる。widget_test.dart や各viewmodelの単体テストと同じ理由で、
 // ここに集約したインメモリ/no-opのフェイクをProviderScopeのoverridesとして渡す。
 
+import 'package:ririkan/models/app_review_management.dart';
 import 'package:ririkan/models/build_failure_log.dart';
 import 'package:ririkan/models/connected_app.dart';
 import 'package:ririkan/models/crash_summary.dart';
@@ -86,6 +87,25 @@ class FakeLocalStoreService extends LocalStoreService {
 
   @override
   Future<void> deleteChecklist(String connectedAppId) async {}
+
+  final Map<String, AppReviewManagement> _managementByAppId = {};
+
+  @override
+  Future<AppReviewManagement?> loadManagement(String connectedAppId) async =>
+      _managementByAppId[connectedAppId];
+
+  @override
+  Future<void> saveManagement(
+    String connectedAppId,
+    AppReviewManagement info,
+  ) async {
+    _managementByAppId[connectedAppId] = info;
+  }
+
+  @override
+  Future<void> deleteManagement(String connectedAppId) async {
+    _managementByAppId.remove(connectedAppId);
+  }
 }
 
 class FakeWidgetSyncService extends WidgetSyncService {

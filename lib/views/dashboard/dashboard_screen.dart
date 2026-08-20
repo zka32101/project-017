@@ -8,6 +8,7 @@ import '../../models/connected_app.dart';
 import '../../models/platform_type.dart';
 import '../../models/user_plan.dart';
 import '../../theme/app_theme.dart';
+import '../../viewmodels/app_review_management_notifier.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
 import '../../viewmodels/dashboard_providers.dart';
 import '../../viewmodels/service_providers.dart';
@@ -228,6 +229,11 @@ class _AppStatusCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final statusAsync = ref.watch(latestReviewStatusProvider(app));
+    // 管理タブ(app_detail_screen.dart)で設定した手動ステータス上書きの
+    // 復元(初回のみ)。checklist_screen.dart等と同じパターンでbareにwatch。
+    ref.watch(appReviewManagementBootstrapProvider(app.id));
+    final manualOverride =
+        ref.watch(appReviewManagementProvider(app.id)).manualStatusOverride;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -240,34 +246,54 @@ class _AppStatusCard extends ConsumerWidget {
         ),
         title: Text(app.displayName),
         subtitle: statusAsync.when(
-          data: (s) => Text(s == null
-              ? l10n.dashboardStatusUnknown
-              : '${s.versionString} ・ ${s.statusType.label(l10n)}'),
+          data: (s) {
+            final status = manualOverride ?? s?.statusType;
+            if (status == null) return Text(l10n.dashboardStatusUnknown);
+            final label = status.label(l10n);
+            final text = s == null ? label : '${s.versionString} ・ $label';
+            return Text(manualOverride != null
+                ? l10n.dashboardManualStatusSuffix(text)
+                : text);
+          },
           loading: () => Text(l10n.dashboardStatusLoading),
-          error: (e, _) => Text(localizedErrorMessage(l10n, e),
-              maxLines: 1, overflow: TextOverflow.ellipsis),
+          error: (e, _) => manualOverride == null
+              ? Text(localizedErrorMessage(l10n, e),
+                  maxLines: 1, overflow: TextOverflow.ellipsis)
+              : Text(l10n.dashboardManualStatusSuffix(manualOverride.label(l10n))),
         ),
         trailing: statusAsync.when(
-          data: (s) => Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: s == null
-                  ? AppTheme.textSecondary
-                  : AppTheme.colorForStatus(s.statusType),
-            ),
-          ),
+          data: (s) {
+            final status = manualOverride ?? s?.statusType;
+            return Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: status == null
+                    ? AppTheme.textSecondary
+                    : AppTheme.colorForStatus(status),
+              ),
+            );
+          },
           loading: () => const SizedBox(
             width: 12,
             height: 12,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          error: (_, _) => IconButton(
-            icon: const Icon(Icons.refresh, size: 18, color: AppTheme.danger),
-            tooltip: l10n.commonRetry,
-            onPressed: () => ref.invalidate(latestReviewStatusProvider(app)),
-          ),
+          error: (_, _) => manualOverride != null
+              ? Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.colorForStatus(manualOverride),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.refresh, size: 18, color: AppTheme.danger),
+                  tooltip: l10n.commonRetry,
+                  onPressed: () => ref.invalidate(latestReviewStatusProvider(app)),
+                ),
         ),
       ),
     );

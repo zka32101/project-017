@@ -128,6 +128,12 @@ abstract class AppLocalizations {
   /// **'削除'**
   String get commonDelete;
 
+  /// No description provided for @commonSelect.
+  ///
+  /// In ja, this message translates to:
+  /// **'選択'**
+  String get commonSelect;
+
   /// No description provided for @dashboardEmptyMessage.
   ///
   /// In ja, this message translates to:
@@ -445,6 +451,90 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'Build {number}'**
   String appDetailBuildNumber(String number);
+
+  /// No description provided for @appDetailTabManagement.
+  ///
+  /// In ja, this message translates to:
+  /// **'管理'**
+  String get appDetailTabManagement;
+
+  /// No description provided for @appDetailManagementStatusSectionTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'審査状態'**
+  String get appDetailManagementStatusSectionTitle;
+
+  /// No description provided for @appDetailManagementAutoStatusValue.
+  ///
+  /// In ja, this message translates to:
+  /// **'自動取得された状態: {status}'**
+  String appDetailManagementAutoStatusValue(String status);
+
+  /// No description provided for @appDetailManagementManualStatusLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'手動でのステータス上書き'**
+  String get appDetailManagementManualStatusLabel;
+
+  /// No description provided for @appDetailManagementAutoOption.
+  ///
+  /// In ja, this message translates to:
+  /// **'自動（上書きしない）'**
+  String get appDetailManagementAutoOption;
+
+  /// No description provided for @appDetailManagementManualOverrideHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'次回の自動取得が成功すると、この上書きは自動的に解除されます。'**
+  String get appDetailManagementManualOverrideHint;
+
+  /// No description provided for @appDetailManagementDatesLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'日付管理'**
+  String get appDetailManagementDatesLabel;
+
+  /// No description provided for @appDetailManagementSubmittedAtLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'審査提出日'**
+  String get appDetailManagementSubmittedAtLabel;
+
+  /// No description provided for @appDetailManagementReviewStartedAtLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'審査開始日'**
+  String get appDetailManagementReviewStartedAtLabel;
+
+  /// No description provided for @appDetailManagementDateNotSet.
+  ///
+  /// In ja, this message translates to:
+  /// **'未設定'**
+  String get appDetailManagementDateNotSet;
+
+  /// No description provided for @appDetailManagementClearDate.
+  ///
+  /// In ja, this message translates to:
+  /// **'クリア'**
+  String get appDetailManagementClearDate;
+
+  /// No description provided for @appDetailManagementNoteLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'メモ・対応履歴'**
+  String get appDetailManagementNoteLabel;
+
+  /// No description provided for @appDetailManagementNoteHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'サポートへの問い合わせ内容や対応メモを記録できます'**
+  String get appDetailManagementNoteHint;
+
+  /// No description provided for @dashboardManualStatusSuffix.
+  ///
+  /// In ja, this message translates to:
+  /// **'{status}（手動）'**
+  String dashboardManualStatusSuffix(String status);
 
   /// No description provided for @errorReviewStatusFetchFailed.
   ///

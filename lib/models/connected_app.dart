@@ -14,6 +14,11 @@ class ConnectedApp {
   final String displayName;
   final int sortOrder;
 
+  /// 大量アプリ管理用の自由なタグ（例:「自社」「受託」「優先度高」）。
+  /// ダッシュボードのタグフィルターで絞り込みに使う。Apple/Google側のAPIには
+  /// 相当する概念が無いため、このアプリ内だけのローカル管理情報。
+  final List<String> tags;
+
   const ConnectedApp({
     required this.id,
     required this.userId,
@@ -22,6 +27,7 @@ class ConnectedApp {
     this.apiKeyRef,
     required this.displayName,
     required this.sortOrder,
+    this.tags = const [],
   });
 
   bool get hasApiKeyRegistered => apiKeyRef != null && apiKeyRef!.isNotEmpty;
@@ -30,6 +36,7 @@ class ConnectedApp {
     String? apiKeyRef,
     String? displayName,
     int? sortOrder,
+    List<String>? tags,
   }) =>
       ConnectedApp(
         id: id,
@@ -39,6 +46,7 @@ class ConnectedApp {
         apiKeyRef: apiKeyRef ?? this.apiKeyRef,
         displayName: displayName ?? this.displayName,
         sortOrder: sortOrder ?? this.sortOrder,
+        tags: tags ?? this.tags,
       );
 
   factory ConnectedApp.fromJson(Map<String, dynamic> json) => ConnectedApp(
@@ -51,6 +59,8 @@ class ConnectedApp {
         apiKeyRef: json['apiKeyRef'] as String?,
         displayName: json['displayName'] as String,
         sortOrder: json['sortOrder'] as int,
+        tags: (json['tags'] as List<dynamic>?)?.map((t) => t as String).toList() ??
+            const [],
       );
 
   Map<String, dynamic> toJson() => {
@@ -61,6 +71,7 @@ class ConnectedApp {
         'apiKeyRef': apiKeyRef,
         'displayName': displayName,
         'sortOrder': sortOrder,
+        'tags': tags,
       };
 
   /// id ベースの値等価性。ConnectedApp は FutureProvider.family のキーとして

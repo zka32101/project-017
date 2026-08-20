@@ -65,6 +65,22 @@ void main() {
       expect(movedCopy.hashCode, equals(app.hashCode));
     });
 
+    test('tags未指定ならデフォルトで空リスト、toJson/fromJsonも往復する', () {
+      const app = ConnectedApp(
+        id: 'app1',
+        userId: 'user1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.ririkan',
+        displayName: 'リリカン',
+        sortOrder: 0,
+      );
+      expect(app.tags, isEmpty);
+
+      final tagged = app.copyWith(tags: ['自社', '優先度高']);
+      final restored = ConnectedApp.fromJson(tagged.toJson());
+      expect(restored.tags, ['自社', '優先度高']);
+    });
+
     test('id が異なれば非等価', () {
       const app1 = ConnectedApp(
         id: 'app1',

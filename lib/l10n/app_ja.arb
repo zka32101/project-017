@@ -21,6 +21,21 @@
   "dashboardSortName": "名前順",
   "dashboardSortPlatform": "プラットフォーム別",
   "dashboardNoMatchMessage": "条件に一致するアプリがありません",
+  "dashboardAttentionFilter": "要注意（{count}）",
+  "@dashboardAttentionFilter": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "dashboardSelectModeTooltip": "選択",
+  "dashboardSelectedCount": "{count}件選択中",
+  "@dashboardSelectedCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "dashboardBulkDeleteTooltip": "選択したアプリを削除",
+  "dashboardBulkDeleteConfirmTitle": "選択した{count}件のアプリを削除しますか？",
+  "@dashboardBulkDeleteConfirmTitle": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "dashboardBulkDeleteConfirmMessage": "削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。",
 
   "appRegistrationTitle": "アプリ登録",
   "appRegistrationApiKeyRequired": "APIキーを入力してください",
@@ -104,6 +119,8 @@
   "appDetailManagementClearDate": "クリア",
   "appDetailManagementNoteLabel": "メモ・対応履歴",
   "appDetailManagementNoteHint": "サポートへの問い合わせ内容や対応メモを記録できます",
+  "appDetailManagementTagsLabel": "タグ",
+  "appDetailManagementTagsHint": "タグを入力してEnterで追加",
 
   "dashboardManualStatusSuffix": "{status}（手動）",
   "@dashboardManualStatusSuffix": {

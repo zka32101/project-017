@@ -200,6 +200,42 @@ abstract class AppLocalizations {
   /// **'条件に一致するアプリがありません'**
   String get dashboardNoMatchMessage;
 
+  /// No description provided for @dashboardAttentionFilter.
+  ///
+  /// In ja, this message translates to:
+  /// **'要注意（{count}）'**
+  String dashboardAttentionFilter(int count);
+
+  /// No description provided for @dashboardSelectModeTooltip.
+  ///
+  /// In ja, this message translates to:
+  /// **'選択'**
+  String get dashboardSelectModeTooltip;
+
+  /// No description provided for @dashboardSelectedCount.
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件選択中'**
+  String dashboardSelectedCount(int count);
+
+  /// No description provided for @dashboardBulkDeleteTooltip.
+  ///
+  /// In ja, this message translates to:
+  /// **'選択したアプリを削除'**
+  String get dashboardBulkDeleteTooltip;
+
+  /// No description provided for @dashboardBulkDeleteConfirmTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'選択した{count}件のアプリを削除しますか？'**
+  String dashboardBulkDeleteConfirmTitle(int count);
+
+  /// No description provided for @dashboardBulkDeleteConfirmMessage.
+  ///
+  /// In ja, this message translates to:
+  /// **'削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。'**
+  String get dashboardBulkDeleteConfirmMessage;
+
   /// No description provided for @appRegistrationTitle.
   ///
   /// In ja, this message translates to:
@@ -529,6 +565,18 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'サポートへの問い合わせ内容や対応メモを記録できます'**
   String get appDetailManagementNoteHint;
+
+  /// No description provided for @appDetailManagementTagsLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'タグ'**
+  String get appDetailManagementTagsLabel;
+
+  /// No description provided for @appDetailManagementTagsHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'タグを入力してEnterで追加'**
+  String get appDetailManagementTagsHint;
 
   /// No description provided for @dashboardManualStatusSuffix.
   ///

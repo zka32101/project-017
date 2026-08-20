@@ -269,4 +269,55 @@ void main() {
       ReviewStatusType.rejected,
     );
   });
+
+  testWidgets('管理タブでタグを追加・削除すると一覧に反映され、'
+      'ConnectedApp側にも保存される', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        iosFakeReviewStatus,
+      ],
+    );
+    addTearDown(container.dispose);
+    final app = await setupApp(container);
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/app-detail/${app.id}');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('管理'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('自社'), findsNothing);
+
+    await tester.enterText(find.byKey(const Key('tagsInput')), '自社');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(Chip, '自社'), findsOneWidget);
+    expect(
+      container.read(connectedAppsProvider).firstWhere((a) => a.id == app.id).tags,
+      ['自社'],
+    );
+
+    await tester.tap(find.descendant(
+      of: find.widgetWithText(Chip, '自社'),
+      matching: find.byIcon(Icons.cancel),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(Chip, '自社'), findsNothing);
+    expect(
+      container.read(connectedAppsProvider).firstWhere((a) => a.id == app.id).tags,
+      isEmpty,
+    );
+  });
 }

@@ -60,6 +60,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dashboardNoMatchMessage => '条件に一致するアプリがありません';
 
   @override
+  String dashboardAttentionFilter(int count) {
+    return '要注意（$count）';
+  }
+
+  @override
+  String get dashboardSelectModeTooltip => '選択';
+
+  @override
+  String dashboardSelectedCount(int count) {
+    return '$count件選択中';
+  }
+
+  @override
+  String get dashboardBulkDeleteTooltip => '選択したアプリを削除';
+
+  @override
+  String dashboardBulkDeleteConfirmTitle(int count) {
+    return '選択した$count件のアプリを削除しますか？';
+  }
+
+  @override
+  String get dashboardBulkDeleteConfirmMessage =>
+      '削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。';
+
+  @override
   String get appRegistrationTitle => 'アプリ登録';
 
   @override
@@ -241,6 +266,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appDetailManagementNoteHint => 'サポートへの問い合わせ内容や対応メモを記録できます';
+
+  @override
+  String get appDetailManagementTagsLabel => 'タグ';
+
+  @override
+  String get appDetailManagementTagsHint => 'タグを入力してEnterで追加';
 
   @override
   String dashboardManualStatusSuffix(String status) {

@@ -25,6 +25,8 @@ class DashboardScreen extends ConsumerWidget {
     final apps = ref.watch(filteredSortedConnectedAppsProvider);
     final sortOption = ref.watch(dashboardSortOptionProvider);
     final plan = ref.watch(userPlanProvider);
+    final selectionMode = ref.watch(dashboardSelectionModeProvider);
+    final selectedIds = ref.watch(dashboardSelectedAppIdsProvider);
     // ホーム画面ウィジェット用データを常に最新化する（Should機能の土台、失敗しても画面表示は継続）。
     ref.watch(widgetSyncProvider);
 
@@ -34,46 +36,98 @@ class DashboardScreen extends ConsumerWidget {
     // クラッシュしない（appsが空のままなら _EmptyDashboard が表示される）。
     ref.watch(appBootstrapProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.appTitle),
-        actions: [
-          PopupMenuButton<DashboardSortOption>(
-            icon: const Icon(Icons.sort),
-            tooltip: l10n.dashboardSortLabel,
-            initialValue: sortOption,
-            onSelected: (value) =>
-                ref.read(dashboardSortOptionProvider.notifier).state = value,
-            itemBuilder: (context) => [
-              CheckedPopupMenuItem(
-                value: DashboardSortOption.manual,
-                checked: sortOption == DashboardSortOption.manual,
-                child: Text(l10n.dashboardSortManual),
-              ),
-              CheckedPopupMenuItem(
-                value: DashboardSortOption.nameAsc,
-                checked: sortOption == DashboardSortOption.nameAsc,
-                child: Text(l10n.dashboardSortName),
-              ),
-              CheckedPopupMenuItem(
-                value: DashboardSortOption.platform,
-                checked: sortOption == DashboardSortOption.platform,
-                child: Text(l10n.dashboardSortPlatform),
-              ),
-            ],
-          ),
-          if (allApps.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.ios_share_outlined),
-              tooltip: l10n.dashboardExportAllTooltip,
-              onPressed: () => context.push('/export-all'),
+    void exitSelectionMode() {
+      ref.read(dashboardSelectionModeProvider.notifier).state = false;
+      ref.read(dashboardSelectedAppIdsProvider.notifier).state = {};
+    }
+
+    Future<void> confirmBulkDelete() async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.dashboardBulkDeleteConfirmTitle(selectedIds.length)),
+          content: Text(l10n.dashboardBulkDeleteConfirmMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.commonCancel),
             ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.push('/settings'),
-          ),
-        ],
-      ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.commonDelete),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      await ref.read(connectedAppsProvider.notifier).removeApps(selectedIds);
+      exitSelectionMode();
+    }
+
+    return Scaffold(
+      appBar: selectionMode
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: exitSelectionMode,
+              ),
+              title: Text(l10n.dashboardSelectedCount(selectedIds.length)),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: l10n.dashboardBulkDeleteTooltip,
+                  onPressed: selectedIds.isEmpty ? null : confirmBulkDelete,
+                ),
+              ],
+            )
+          : AppBar(
+              title: Text(l10n.appTitle),
+              actions: [
+                if (allApps.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.checklist_outlined),
+                    tooltip: l10n.dashboardSelectModeTooltip,
+                    onPressed: () => ref
+                        .read(dashboardSelectionModeProvider.notifier)
+                        .state = true,
+                  ),
+                PopupMenuButton<DashboardSortOption>(
+                  icon: const Icon(Icons.sort),
+                  tooltip: l10n.dashboardSortLabel,
+                  initialValue: sortOption,
+                  onSelected: (value) => ref
+                      .read(dashboardSortOptionProvider.notifier)
+                      .state = value,
+                  itemBuilder: (context) => [
+                    CheckedPopupMenuItem(
+                      value: DashboardSortOption.manual,
+                      checked: sortOption == DashboardSortOption.manual,
+                      child: Text(l10n.dashboardSortManual),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: DashboardSortOption.nameAsc,
+                      checked: sortOption == DashboardSortOption.nameAsc,
+                      child: Text(l10n.dashboardSortName),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: DashboardSortOption.platform,
+                      checked: sortOption == DashboardSortOption.platform,
+                      child: Text(l10n.dashboardSortPlatform),
+                    ),
+                  ],
+                ),
+                if (allApps.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.ios_share_outlined),
+                    tooltip: l10n.dashboardExportAllTooltip,
+                    onPressed: () => context.push('/export-all'),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: () => context.push('/settings'),
+                ),
+              ],
+            ),
       body: allApps.isEmpty
           ? _EmptyDashboard(message: l10n.dashboardEmptyMessage)
           : Column(
@@ -82,7 +136,9 @@ class DashboardScreen extends ConsumerWidget {
                 Expanded(
                   child: apps.isEmpty
                       ? _EmptyDashboard(message: l10n.dashboardNoMatchMessage)
-                      : sortOption == DashboardSortOption.manual
+                      // 選択モード中はドラッグ並び替えと選択タップの操作が競合するため、
+                      // manualソートでも常にListView(ドラッグ無効)にする。
+                      : !selectionMode && sortOption == DashboardSortOption.manual
                           ? ReorderableListView.builder(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                               itemCount: apps.length,
@@ -92,6 +148,8 @@ class DashboardScreen extends ConsumerWidget {
                               itemBuilder: (context, i) => _AppStatusCard(
                                 key: ValueKey(apps[i].id),
                                 app: apps[i],
+                                selectionMode: selectionMode,
+                                selected: selectedIds.contains(apps[i].id),
                               ),
                             )
                           : ListView.builder(
@@ -100,6 +158,8 @@ class DashboardScreen extends ConsumerWidget {
                               itemBuilder: (context, i) => _AppStatusCard(
                                 key: ValueKey(apps[i].id),
                                 app: apps[i],
+                                selectionMode: selectionMode,
+                                selected: selectedIds.contains(apps[i].id),
                               ),
                             ),
                 ),
@@ -150,6 +210,10 @@ class _SearchAndFilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final platformFilter = ref.watch(dashboardPlatformFilterProvider);
+    final attentionOnly = ref.watch(dashboardAttentionOnlyProvider);
+    final attentionCount = ref.watch(dashboardAttentionCountProvider);
+    final tagFilter = ref.watch(dashboardTagFilterProvider);
+    final allTags = ref.watch(allTagsProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -169,6 +233,7 @@ class _SearchAndFilterBar extends ConsumerWidget {
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: [
               ChoiceChip(
                 label: Text(l10n.dashboardFilterAll),
@@ -191,8 +256,36 @@ class _SearchAndFilterBar extends ConsumerWidget {
                     .read(dashboardPlatformFilterProvider.notifier)
                     .state = PlatformType.android,
               ),
+              ChoiceChip(
+                label: Text(l10n.dashboardAttentionFilter(attentionCount)),
+                avatar: attentionOnly
+                    ? null
+                    : const Icon(Icons.error_outline, size: 18, color: AppTheme.danger),
+                selected: attentionOnly,
+                onSelected: (value) => ref
+                    .read(dashboardAttentionOnlyProvider.notifier)
+                    .state = value,
+              ),
             ],
           ),
+          // タグが1つも登録されていない場合は行自体を出さない(絞り込む対象が無いため)。
+          if (allTags.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final tag in allTags)
+                  ChoiceChip(
+                    label: Text(tag),
+                    selected: tagFilter == tag,
+                    onSelected: (selected) => ref
+                        .read(dashboardTagFilterProvider.notifier)
+                        .state = selected ? tag : null,
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -223,7 +316,14 @@ class _EmptyDashboard extends StatelessWidget {
 
 class _AppStatusCard extends ConsumerWidget {
   final ConnectedApp app;
-  const _AppStatusCard({super.key, required this.app});
+  final bool selectionMode;
+  final bool selected;
+  const _AppStatusCard({
+    super.key,
+    required this.app,
+    this.selectionMode = false,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -235,15 +335,29 @@ class _AppStatusCard extends ConsumerWidget {
     final manualOverride =
         ref.watch(appReviewManagementProvider(app.id)).manualStatusOverride;
 
+    void toggleSelected() {
+      final current = ref.read(dashboardSelectedAppIdsProvider);
+      ref.read(dashboardSelectedAppIdsProvider.notifier).state = selected
+          ? (current.toSet()..remove(app.id))
+          : (current.toSet()..add(app.id));
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        onTap: () => context.push('/app-detail/${app.id}', extra: app),
-        leading: CircleAvatar(
-          backgroundColor: AppTheme.surfaceVariant,
-          child: Text(app.platform == PlatformType.ios ? 'iOS' : 'And',
-              style: const TextStyle(fontSize: 10)),
-        ),
+        onTap: selectionMode
+            ? toggleSelected
+            : () => context.push('/app-detail/${app.id}', extra: app),
+        leading: selectionMode
+            ? Checkbox(
+                value: selected,
+                onChanged: (_) => toggleSelected(),
+              )
+            : CircleAvatar(
+                backgroundColor: AppTheme.surfaceVariant,
+                child: Text(app.platform == PlatformType.ios ? 'iOS' : 'And',
+                    style: const TextStyle(fontSize: 10)),
+              ),
         title: Text(app.displayName),
         subtitle: statusAsync.when(
           data: (s) {

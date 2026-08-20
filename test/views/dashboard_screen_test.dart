@@ -327,4 +327,145 @@ void main() {
       expect(find.text('全アプリ集約エクスポート'), findsOneWidget);
     });
   });
+
+  group('大量アプリ管理（要注意フィルター・タグフィルター・一括選択削除）', () {
+    late ProviderContainer container;
+
+    setUp(() {
+      container = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          // iOSはリジェクト(要注意)、Androidは承認済み(要注意でない)固定にして
+          // 要注意フィルターの絞り込みを検証する。
+          reviewStatusServiceProvider(PlatformType.ios)
+              .overrideWithValue(_FixedReviewStatusService(ReviewStatusType.rejected)),
+          reviewStatusServiceProvider(PlatformType.android)
+              .overrideWithValue(_FixedReviewStatusService(ReviewStatusType.approved)),
+        ],
+      );
+    });
+
+    tearDown(() => container.dispose());
+
+    testWidgets('要注意フィルターを選ぶとリジェクト/審査中のアプリだけ表示される', (tester) async {
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.rejected',
+            displayName: 'リジェクトApp',
+            apiKey: 'k',
+          );
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.android,
+            bundleIdOrPackageName: 'works.petit.approved',
+            displayName: '承認済みApp',
+            apiKey: 'k',
+          );
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('リジェクトApp'), findsOneWidget);
+      expect(find.text('承認済みApp'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '要注意（1）'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('リジェクトApp'), findsOneWidget);
+      expect(find.text('承認済みApp'), findsNothing);
+    });
+
+    testWidgets('タグを設定したアプリはタグチップで絞り込める', (tester) async {
+      final a = await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.a',
+            displayName: 'AppA',
+            apiKey: 'k',
+          );
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.android,
+            bundleIdOrPackageName: 'works.petit.b',
+            displayName: 'AppB',
+            apiKey: 'k',
+          );
+      await container.read(connectedAppsProvider.notifier).setTags(a.id, ['自社']);
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('AppA'), findsOneWidget);
+      expect(find.text('AppB'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '自社'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('AppA'), findsOneWidget);
+      expect(find.text('AppB'), findsNothing);
+    });
+
+    testWidgets('選択モードでチェックした複数アプリを一括削除できる', (tester) async {
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.a',
+            displayName: 'AppA',
+            apiKey: 'k',
+          );
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.android,
+            bundleIdOrPackageName: 'works.petit.b',
+            displayName: 'AppB',
+            apiKey: 'k',
+          );
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 選択モードに入る。
+      await tester.tap(find.byIcon(Icons.checklist_outlined));
+      await tester.pumpAndSettle();
+      expect(find.text('0件選択中'), findsOneWidget);
+
+      // AppAだけチェックする。
+      await tester.tap(find.widgetWithText(ListTile, 'AppA'));
+      await tester.pumpAndSettle();
+      expect(find.text('1件選択中'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+      expect(find.text('選択した1件のアプリを削除しますか？'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TextButton, '削除'));
+      await tester.pumpAndSettle();
+
+      // 削除後は選択モードを抜け、AppAだけが消える。
+      expect(find.text('AppA'), findsNothing);
+      expect(find.text('AppB'), findsOneWidget);
+      expect(find.text('リリカン'), findsOneWidget);
+    });
+  });
 }

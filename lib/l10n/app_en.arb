@@ -20,6 +20,12 @@
   "dashboardSortName": "Name",
   "dashboardSortPlatform": "Platform",
   "dashboardNoMatchMessage": "No apps match your filters",
+  "dashboardAttentionFilter": "Needs Attention ({count})",
+  "dashboardSelectModeTooltip": "Select",
+  "dashboardSelectedCount": "{count} selected",
+  "dashboardBulkDeleteTooltip": "Delete selected apps",
+  "dashboardBulkDeleteConfirmTitle": "Delete {count} selected apps?",
+  "dashboardBulkDeleteConfirmMessage": "Deleting will also remove their saved API keys and checklist progress. This cannot be undone.",
 
   "appRegistrationTitle": "Register App",
   "appRegistrationApiKeyRequired": "Please enter an API key",
@@ -78,6 +84,8 @@
   "appDetailManagementClearDate": "Clear",
   "appDetailManagementNoteLabel": "Notes / History",
   "appDetailManagementNoteHint": "Record support inquiries or follow-up notes here",
+  "appDetailManagementTagsLabel": "Tags",
+  "appDetailManagementTagsHint": "Type a tag and press Enter to add",
 
   "dashboardManualStatusSuffix": "{status} (Manual)",
 

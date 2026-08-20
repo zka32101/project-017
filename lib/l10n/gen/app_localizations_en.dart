@@ -60,6 +60,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardNoMatchMessage => 'No apps match your filters';
 
   @override
+  String dashboardAttentionFilter(int count) {
+    return 'Needs Attention ($count)';
+  }
+
+  @override
+  String get dashboardSelectModeTooltip => 'Select';
+
+  @override
+  String dashboardSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get dashboardBulkDeleteTooltip => 'Delete selected apps';
+
+  @override
+  String dashboardBulkDeleteConfirmTitle(int count) {
+    return 'Delete $count selected apps?';
+  }
+
+  @override
+  String get dashboardBulkDeleteConfirmMessage =>
+      'Deleting will also remove their saved API keys and checklist progress. This cannot be undone.';
+
+  @override
   String get appRegistrationTitle => 'Register App';
 
   @override
@@ -250,6 +275,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appDetailManagementNoteHint =>
       'Record support inquiries or follow-up notes here';
+
+  @override
+  String get appDetailManagementTagsLabel => 'Tags';
+
+  @override
+  String get appDetailManagementTagsHint => 'Type a tag and press Enter to add';
 
   @override
   String dashboardManualStatusSuffix(String status) {

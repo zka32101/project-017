@@ -101,6 +101,30 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
     await ref.read(localStoreServiceProvider).deleteManagement(id);
   }
 
+  /// 複数アプリをまとめて削除する（ダッシュボードの一括選択・一括削除機能用）。
+  /// removeApp()をN回呼ぶのではなく、Secure Storage/チェックリスト/管理情報の
+  /// 削除は個々に行いつつ、ローカル/クラウドへの永続化(_persist)は最後に
+  /// 1回だけ行う（N件削除でN回ファイル全体を書き直す無駄を避けるため）。
+  Future<void> removeApps(Iterable<String> ids) async {
+    final idSet = ids.toSet();
+    for (final id in idSet) {
+      await ref.read(secureStorageServiceProvider).deleteApiKey(id);
+      await ref.read(localStoreServiceProvider).deleteChecklist(id);
+      await ref.read(localStoreServiceProvider).deleteManagement(id);
+    }
+    state = state.where((a) => !idSet.contains(a.id)).toList();
+    await _persist();
+  }
+
+  /// アプリ単位のタグ編集（大量アプリ管理用のタグ/グループ分け機能）。
+  Future<void> setTags(String id, List<String> tags) async {
+    state = [
+      for (final app in state)
+        if (app.id == id) app.copyWith(tags: tags) else app,
+    ];
+    await _persist();
+  }
+
   /// 永続化データからの復元用。APIキー本体は前回セッションで既にSecure
   /// Storageへ保存済みのため、ここではメタデータ一覧をstateへ反映するだけでよい
   /// （Secure Storageへの再書き込みは行わない）。

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/connected_app.dart';
 import '../models/platform_type.dart';
 import '../models/review_status_snapshot.dart';
+import '../models/review_status_type.dart';
 import '../services/service_result.dart';
+import '../services/widget_sync_service.dart';
 import 'app_review_management_notifier.dart';
 import 'connected_apps_notifier.dart';
 import 'service_providers.dart';
@@ -51,16 +53,57 @@ final dashboardSearchQueryProvider = StateProvider<String>((ref) => '');
 final dashboardPlatformFilterProvider =
     StateProvider<PlatformType?>((ref) => null);
 
+/// null = 全てのタグを表示（特定タグで絞り込まない）
+final dashboardTagFilterProvider = StateProvider<String?>((ref) => null);
+
+/// true = 要注意（リジェクト/審査中）のアプリだけ表示する
+/// （大量アプリ管理用のフィルター機能。isAttentionStatus判定自体は
+/// widget_sync_provider.dartのホーム画面ウィジェット集計と同じ基準を使う）。
+final dashboardAttentionOnlyProvider = StateProvider<bool>((ref) => false);
+
 final dashboardSortOptionProvider =
     StateProvider<DashboardSortOption>((ref) => DashboardSortOption.manual);
 
-/// 検索・プラットフォームフィルター・ソートを適用した最終的な表示リスト。
-/// 元の並び順(sortedConnectedAppsProvider)は保ったまま絞り込み、
-/// manual以外のソート方式が選ばれている場合のみ並び替えを上書きする。
+/// 登録アプリ全体で使われているタグの一覧（重複無し、辞書順）。
+/// タグフィルターのチップ行を組み立てるために使う。
+final allTagsProvider = Provider<List<String>>((ref) {
+  final apps = ref.watch(connectedAppsProvider);
+  final tags = apps.expand((a) => a.tags).toSet().toList()..sort();
+  return tags;
+});
+
+/// 手動ステータス上書きがあればそれを、無ければ自動取得値(まだ取得中/
+/// 失敗中ならnull)を返す。要注意フィルターの判定・件数集計の両方から
+/// 共通で使う(dashboard_screen.dartの_AppStatusCardも同じロジックを持つが、
+/// あちらはWidgetRef上のUI表示用で型が異なるため独立している)。
+ReviewStatusType? _effectiveStatus(Ref ref, ConnectedApp app) {
+  final override =
+      ref.watch(appReviewManagementProvider(app.id)).manualStatusOverride;
+  final auto = ref.watch(latestReviewStatusProvider(app)).valueOrNull;
+  return override ?? auto?.statusType;
+}
+
+bool _needsAttention(Ref ref, ConnectedApp app) {
+  final status = _effectiveStatus(ref, app);
+  return status != null && const WidgetSyncService().isAttentionStatus(status);
+}
+
+/// 要注意フィルターのチップに件数バッジを出すための集計。
+final dashboardAttentionCountProvider = Provider<int>((ref) {
+  final apps = ref.watch(sortedConnectedAppsProvider);
+  return apps.where((app) => _needsAttention(ref, app)).length;
+});
+
+/// 検索・プラットフォームフィルター・タグフィルター・要注意フィルター・
+/// ソートを適用した最終的な表示リスト。元の並び順(sortedConnectedAppsProvider)
+/// は保ったまま絞り込み、manual以外のソート方式が選ばれている場合のみ
+/// 並び替えを上書きする。
 final filteredSortedConnectedAppsProvider = Provider<List<ConnectedApp>>((ref) {
   final apps = ref.watch(sortedConnectedAppsProvider);
   final query = ref.watch(dashboardSearchQueryProvider).trim().toLowerCase();
   final platformFilter = ref.watch(dashboardPlatformFilterProvider);
+  final tagFilter = ref.watch(dashboardTagFilterProvider);
+  final attentionOnly = ref.watch(dashboardAttentionOnlyProvider);
   final sortOption = ref.watch(dashboardSortOptionProvider);
 
   final filtered = apps.where((app) {
@@ -68,6 +111,15 @@ final filteredSortedConnectedAppsProvider = Provider<List<ConnectedApp>>((ref) {
       return false;
     }
     if (query.isNotEmpty && !app.displayName.toLowerCase().contains(query)) {
+      return false;
+    }
+    if (tagFilter != null && !app.tags.contains(tagFilter)) {
+      return false;
+    }
+    // attentionOnlyがfalseの場合はここから先のref.watchが実行されないため、
+    // 全アプリの審査状態を毎回watchする追加コストは発生しない
+    // (Riverpodの依存関係はbuild呼び出しごとに動的に記録されるため)。
+    if (attentionOnly && !_needsAttention(ref, app)) {
       return false;
     }
     return true;
@@ -86,3 +138,12 @@ final filteredSortedConnectedAppsProvider = Provider<List<ConnectedApp>>((ref) {
   }
   return filtered;
 });
+
+/// 一括選択モード(ダッシュボードの一括削除機能用)。trueの間、
+/// _AppStatusCardはタップで詳細画面へ遷移する代わりに選択トグルになる。
+final dashboardSelectionModeProvider = StateProvider<bool>((ref) => false);
+
+/// 一括選択モード中に選択されているアプリID。選択モードを抜けたら
+/// DashboardScreen側で明示的にクリアする(次回入った時に前回の選択が
+/// 残っていると混乱するため)。
+final dashboardSelectedAppIdsProvider = StateProvider<Set<String>>((ref) => {});

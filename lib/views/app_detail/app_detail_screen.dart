@@ -15,6 +15,7 @@ import '../../models/revenue_summary.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/app_detail_providers.dart';
 import '../../viewmodels/app_review_management_notifier.dart';
+import '../../viewmodels/connected_apps_notifier.dart';
 import '../../viewmodels/dashboard_providers.dart';
 
 /// アプリ詳細: 審査履歴/クラッシュ推移/売上・DL数/リジェクト理由/ビルド失敗ログ/管理の6タブ
@@ -417,6 +418,16 @@ class _ManagementTabState extends ConsumerState<_ManagementTab> {
     final autoStatus = ref.watch(latestReviewStatusProvider(widget.app));
     final notifier = ref.read(appReviewManagementProvider(appId).notifier);
 
+    // タグはConnectedApp側のフィールドなので、widget.app(遷移時に渡された
+    // 静的なスナップショット)ではなく、connectedAppsProviderを都度watchして
+    // 編集直後の最新値を表示する。
+    final apps = ref.watch(connectedAppsProvider);
+    final liveApp = apps.cast<ConnectedApp?>().firstWhere(
+          (a) => a?.id == appId,
+          orElse: () => null,
+        ) ??
+        widget.app;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -432,6 +443,14 @@ class _ManagementTabState extends ConsumerState<_ManagementTab> {
           management: management,
           onSubmittedAtChanged: notifier.setSubmittedAt,
           onReviewStartedAtChanged: notifier.setReviewStartedAt,
+        ),
+        const SizedBox(height: 16),
+        _TagsCard(
+          l10n: l10n,
+          tags: liveApp.tags,
+          onChanged: (tags) => ref
+              .read(connectedAppsProvider.notifier)
+              .setTags(appId, tags),
         ),
         const SizedBox(height: 16),
         _NoteCard(
@@ -609,6 +628,86 @@ class _DateRow extends StatelessWidget {
           child: Text(l10n.commonSelect),
         ),
       ],
+    );
+  }
+}
+
+/// タグ編集(大量アプリ管理用)。フリーテキストで入力してEnterで追加、
+/// 各タグはChipのバツ印で削除する。入力欄自体は保存対象の状態を
+/// 持たないため(送信済みタグはConnectedApp.tags側が真実)、
+/// controllerはこのWidget内で完結させて良い(_NoteCardのように
+/// 外部からの復元同期は不要)。
+class _TagsCard extends StatefulWidget {
+  final AppLocalizations l10n;
+  final List<String> tags;
+  final ValueChanged<List<String>> onChanged;
+
+  const _TagsCard({
+    required this.l10n,
+    required this.tags,
+    required this.onChanged,
+  });
+
+  @override
+  State<_TagsCard> createState() => _TagsCardState();
+}
+
+class _TagsCardState extends State<_TagsCard> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _addTag(String value) {
+    final tag = value.trim();
+    _controller.clear();
+    if (tag.isEmpty || widget.tags.contains(tag)) return;
+    widget.onChanged([...widget.tags, tag]);
+  }
+
+  void _removeTag(String tag) =>
+      widget.onChanged(widget.tags.where((t) => t != tag).toList());
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.l10n.appDetailManagementTagsLabel,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (widget.tags.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final tag in widget.tags)
+                    Chip(
+                      label: Text(tag),
+                      onDeleted: () => _removeTag(tag),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('tagsInput'),
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: widget.l10n.appDetailManagementTagsHint,
+                isDense: true,
+              ),
+              onSubmitted: _addTag,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

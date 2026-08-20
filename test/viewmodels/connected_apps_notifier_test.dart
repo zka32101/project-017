@@ -319,6 +319,66 @@ void main() {
     });
   });
 
+  group('ConnectedAppsNotifier.removeApps（大量アプリ管理・一括削除）', () {
+    test('指定した複数アプリだけがまとめて削除され、残りは影響を受けない', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      final a = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'a',
+        displayName: 'A',
+        apiKey: 'k',
+      );
+      final b = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'b',
+        displayName: 'B',
+        apiKey: 'k',
+      );
+      final c = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'c',
+        displayName: 'C',
+        apiKey: 'k',
+      );
+
+      await notifier.removeApps([a.id, c.id]);
+
+      final state = container.read(connectedAppsProvider);
+      expect(state, hasLength(1));
+      expect(state.single.id, b.id);
+    });
+  });
+
+  group('ConnectedAppsNotifier.setTags（大量アプリ管理・タグ付け）', () {
+    test('該当アプリのタグだけが更新され、他アプリは影響を受けない', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      final a = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'a',
+        displayName: 'A',
+        apiKey: 'k',
+      );
+      final b = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'b',
+        displayName: 'B',
+        apiKey: 'k',
+      );
+
+      await notifier.setTags(a.id, ['自社', '優先度高']);
+
+      final state = container.read(connectedAppsProvider);
+      expect(state.firstWhere((app) => app.id == a.id).tags,
+          ['自社', '優先度高']);
+      expect(state.firstWhere((app) => app.id == b.id).tags, isEmpty);
+    });
+  });
+
   group('ConnectedAppsNotifier.initializeDemoAppsIfNeeded', () {
     test('同時に複数回呼んでもデモアプリは1組しか登録されない（二重登録レースの防止）', () async {
       final notifier = container.read(connectedAppsProvider.notifier);

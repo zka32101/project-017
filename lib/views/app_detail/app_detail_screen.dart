@@ -15,8 +15,12 @@ import '../../viewmodels/app_detail_providers.dart';
 
 /// アプリ詳細: 審査履歴/クラッシュ推移/売上・DL数/リジェクト理由/ビルド失敗ログの5タブ
 /// （Must#1拡張＋Should機能の売上サマリー）。
-/// 通知タップからのディープリンクでは、リジェクト通知の場合はリジェクト理由タブを開いた状態で表示する
-/// （設計書 Step2）— initialTabIndex で制御。
+/// initialTabIndexで初期表示タブを指定できる(設計書Step2は「リジェクト通知
+/// タップでリジェクト理由タブを開く」導線を想定しているが、現状の
+/// NotificationService はタップ時のハンドラを持たない固定文言の毎朝リマインダー
+/// のみで、審査状態変化に連動した個別通知自体が無い。そのためinitialTabIndex
+/// は現状どの呼び出し元からも0(デフォルト)以外を渡されておらず未使用。
+/// 個別通知の実装時にこのパラメータを活用する想定)。
 class AppDetailScreen extends ConsumerStatefulWidget {
   final ConnectedApp app;
   final int initialTabIndex;

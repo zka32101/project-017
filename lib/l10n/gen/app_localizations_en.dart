@@ -18,6 +18,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonAppNotFound => 'App not found';
 
   @override
+  String get commonCancel => 'Cancel';
+
+  @override
+  String get commonDelete => 'Delete';
+
+  @override
   String get dashboardEmptyMessage => 'No apps registered yet';
 
   @override
@@ -426,6 +432,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String settingsApiKeyMasked(String masked) {
     return 'API Key: $masked';
+  }
+
+  @override
+  String get settingsRemoveConfirmTitle => 'Remove this app?';
+
+  @override
+  String settingsRemoveConfirmMessage(String appName) {
+    return 'Removing \"$appName\" will also delete its saved API key and checklist progress. This cannot be undone.';
   }
 
   @override

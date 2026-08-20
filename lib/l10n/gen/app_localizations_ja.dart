@@ -18,6 +18,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonAppNotFound => 'アプリが見つかりません';
 
   @override
+  String get commonCancel => 'キャンセル';
+
+  @override
+  String get commonDelete => '削除';
+
+  @override
   String get dashboardEmptyMessage => 'まだ登録アプリがありません';
 
   @override
@@ -409,6 +415,14 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String settingsApiKeyMasked(String masked) {
     return 'APIキー: $masked';
+  }
+
+  @override
+  String get settingsRemoveConfirmTitle => 'このアプリを削除しますか？';
+
+  @override
+  String settingsRemoveConfirmMessage(String appName) {
+    return '「$appName」を削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。';
   }
 
   @override

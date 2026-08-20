@@ -18,7 +18,14 @@ import '../views/settings/settings_screen.dart';
 
 /// 画面フロー（設計書 Step2）:
 /// 起動 → オンボーディング → 通知プレプロンプト → アプリ登録 → 初回スキャン → ダッシュボード
-/// ダッシュボード → アプリ詳細（通知タップからのディープリンクにも対応）
+/// ダッシュボード → アプリ詳細
+///
+/// /app-detail/:id 等は extra(ConnectedApp)無しでもidだけから解決できる
+/// ため、URLベースのディープリンク一般には対応できる構造になっている。
+/// ただし現状、通知タップをこのルートへ実際に連携させる仕組み
+/// (NotificationServiceのタップハンドラ)自体が無いため、「通知タップ→
+/// このルートを開く」という導線はまだ結線されていない
+/// (詳細はNotificationService/AppDetailScreenのドキュメントコメント参照)。
 GoRouter buildAppRouter() {
   return GoRouter(
     // ドッグフーディング・実機テスト用：初期位置をダッシュボードに変更

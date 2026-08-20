@@ -7,6 +7,7 @@ import '../../models/connected_app.dart';
 import '../../models/user_plan.dart';
 import '../../services/notification_service.dart';
 import '../../services/revenue_cat_oauth_service.dart';
+import '../../theme/app_theme.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
 import '../../viewmodels/service_providers.dart';
 
@@ -89,6 +90,32 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
         ref.read(secureStorageServiceProvider).readApiKey(widget.app.id);
   }
 
+  /// 削除は元に戻せず、Secure Storageのキー・チェックリスト進捗も一緒に
+  /// 消えるため、誤タップによる意図しない削除を防ぐ確認ダイアログを挟む。
+  Future<void> _confirmAndRemove() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.settingsRemoveConfirmTitle),
+        content: Text(l10n.settingsRemoveConfirmMessage(widget.app.displayName)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.commonDelete,
+                style: const TextStyle(color: AppTheme.danger)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _remove();
+  }
+
   Future<void> _remove() async {
     final l10n = AppLocalizations.of(context);
     setState(() => _removing = true);
@@ -129,7 +156,7 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
             )
           : IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: _remove,
+              onPressed: _confirmAndRemove,
             ),
     );
   }

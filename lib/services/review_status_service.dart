@@ -7,7 +7,11 @@ import '../models/review_status_snapshot.dart';
 import 'service_result.dart';
 
 /// App Store Connect / Play Console 共通インターフェース。
-/// 実装は AppStoreConnectService（Webhooks中継）と PlayConsoleService（MVPはポーリング、条件1準拠）。
+/// 実装は AppStoreConnectService と PlayConsoleService の両方とも、呼び出し
+/// 側（画面）が明示的に叩いた時にAPIを読みに行くポーリング方式（このアプリ
+/// はバックエンドを持たないため、AppleからのWebhook配信を受信する仕組み
+/// 自体が存在しない。ダッシュボードのリアルタイム自動更新ではなく、画面を
+/// 開いた/再試行した時点の最新状態を取得する設計）。
 abstract class ReviewStatusService {
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
     ConnectedApp app,

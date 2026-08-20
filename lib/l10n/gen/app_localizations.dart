@@ -116,6 +116,18 @@ abstract class AppLocalizations {
   /// **'アプリが見つかりません'**
   String get commonAppNotFound;
 
+  /// No description provided for @commonCancel.
+  ///
+  /// In ja, this message translates to:
+  /// **'キャンセル'**
+  String get commonCancel;
+
+  /// No description provided for @commonDelete.
+  ///
+  /// In ja, this message translates to:
+  /// **'削除'**
+  String get commonDelete;
+
   /// No description provided for @dashboardEmptyMessage.
   ///
   /// In ja, this message translates to:
@@ -823,6 +835,18 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'APIキー: {masked}'**
   String settingsApiKeyMasked(String masked);
+
+  /// No description provided for @settingsRemoveConfirmTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'このアプリを削除しますか？'**
+  String get settingsRemoveConfirmTitle;
+
+  /// No description provided for @settingsRemoveConfirmMessage.
+  ///
+  /// In ja, this message translates to:
+  /// **'「{appName}」を削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。'**
+  String settingsRemoveConfirmMessage(String appName);
 
   /// No description provided for @settingsRevenueCatLabel.
   ///

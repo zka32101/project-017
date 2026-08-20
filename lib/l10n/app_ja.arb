@@ -6,6 +6,8 @@
 
   "commonRetry": "再試行",
   "commonAppNotFound": "アプリが見つかりません",
+  "commonCancel": "キャンセル",
+  "commonDelete": "削除",
 
   "dashboardEmptyMessage": "まだ登録アプリがありません",
   "dashboardAddApp": "アプリを追加",
@@ -189,6 +191,11 @@
   "settingsApiKeyMasked": "APIキー: {masked}",
   "@settingsApiKeyMasked": {
     "placeholders": {"masked": {"type": "String"}}
+  },
+  "settingsRemoveConfirmTitle": "このアプリを削除しますか？",
+  "settingsRemoveConfirmMessage": "「{appName}」を削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。",
+  "@settingsRemoveConfirmMessage": {
+    "placeholders": {"appName": {"type": "String"}}
   },
 
   "settingsRevenueCatLabel": "RevenueCat連携",

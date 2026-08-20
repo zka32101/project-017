@@ -43,7 +43,8 @@ void main() {
 
   tearDown(() => container.dispose());
 
-  testWidgets('削除アイコンをタップするとアプリが一覧・stateから消える', (tester) async {
+  testWidgets('削除アイコンをタップ→確認ダイアログで「削除」を選ぶとアプリが一覧・stateから消える',
+      (tester) async {
     // ウィジェットをpumpする前にコンテナへ直接登録しておくことで、
     // ダッシュボードの appBootstrapProvider が走る時点で
     // state.isNotEmpty となり、デモアプリの自動投入をスキップさせる
@@ -71,11 +72,47 @@ void main() {
     await tester.tap(find.byIcon(Icons.delete_outline));
     await tester.pumpAndSettle();
 
+    // 確認ダイアログが出た時点ではまだ削除されていない。
+    expect(find.text('このアプリを削除しますか？'), findsOneWidget);
+    expect(find.text('削除対象アプリ'), findsOneWidget);
+
+    await tester.tap(find.text('削除'));
+    await tester.pumpAndSettle();
+
     expect(find.text('削除対象アプリ'), findsNothing);
     expect(
       container.read(connectedAppsProvider).where((a) => a.id == app.id),
       isEmpty,
     );
+  });
+
+  testWidgets('削除確認ダイアログで「キャンセル」を選ぶとアプリは消えない', (tester) async {
+    await container.read(connectedAppsProvider.notifier).registerApp(
+          userId: 'u1',
+          platform: PlatformType.ios,
+          bundleIdOrPackageName: 'works.petit.app1',
+          displayName: '削除対象アプリ',
+          apiKey: 'k',
+        );
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/settings');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('キャンセル'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('削除対象アプリ'), findsOneWidget);
+    expect(container.read(connectedAppsProvider), hasLength(1));
   });
 
   testWidgets('登録済みAPIキーは全文表示されず、末尾4文字だけのマスク表示になる',

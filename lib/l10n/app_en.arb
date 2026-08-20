@@ -5,6 +5,8 @@
 
   "commonRetry": "Retry",
   "commonAppNotFound": "App not found",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
 
   "dashboardEmptyMessage": "No apps registered yet",
   "dashboardAddApp": "Add App",
@@ -134,6 +136,11 @@
   "settingsNotificationPermissionDenied": "Notifications are not allowed. Please enable them in your device settings",
   "settingsRemoveFailed": "Failed to remove: {error}",
   "settingsApiKeyMasked": "API Key: {masked}",
+  "settingsRemoveConfirmTitle": "Remove this app?",
+  "settingsRemoveConfirmMessage": "Removing \"{appName}\" will also delete its saved API key and checklist progress. This cannot be undone.",
+  "@settingsRemoveConfirmMessage": {
+    "placeholders": {"appName": {"type": "String"}}
+  },
 
   "settingsRevenueCatLabel": "RevenueCat Connection",
   "settingsRevenueCatConnected": "Connected",

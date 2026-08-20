@@ -1,4 +1,4 @@
-﻿name: ririkan
+name: ririkan
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -41,7 +41,7 @@ dependencies:
   go_router: ^14.8.1
 
   # APIキー・トークンのオンデバイス保管（Must#4）
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^10.3.1
 
   # 多言語対応（日本語＋英語、初期スコープ）
   intl: ^0.20.2

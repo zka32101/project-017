@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+import '../models/app_review_management.dart';
 import '../models/connected_app.dart';
 import '../models/submission_checklist_item.dart';
 import '../models/user_plan.dart';
@@ -125,6 +126,56 @@ class LocalStoreService {
   Future<void> deleteChecklist(String connectedAppId) async {
     try {
       final file = await _checklistFile(connectedAppId);
+      if (file == null || !await file.exists()) return;
+      await file.delete();
+    } catch (_) {
+      // ベストエフォート。removeApp()自体は失敗させない。
+    }
+  }
+
+  /// 審査状態の手動上書き・提出日/審査開始日・メモ（AppReviewManagement）は
+  /// チェックリストと同様、connectedAppIdごとに独立した別ファイルに保存する
+  /// （理由は_checklistFile()のコメント参照、apps/planの共有ファイルへ混ぜると
+  /// 非同期の複数箇所からの保存でレースコンディションが起きるため）。
+  Future<File?> _managementFile(String connectedAppId) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      return File('${dir.path}/ririkan_management_$connectedAppId.json');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<AppReviewManagement?> loadManagement(String connectedAppId) async {
+    try {
+      final file = await _managementFile(connectedAppId);
+      if (file == null || !await file.exists()) return null;
+      final raw = await file.readAsString();
+      if (raw.trim().isEmpty) return null;
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return AppReviewManagement.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveManagement(
+    String connectedAppId,
+    AppReviewManagement info,
+  ) async {
+    try {
+      final file = await _managementFile(connectedAppId);
+      if (file == null) return;
+      await file.writeAsString(jsonEncode(info.toJson()));
+    } catch (_) {
+      // ベストエフォート。
+    }
+  }
+
+  /// アプリ削除時に呼ばれ、そのアプリの管理情報ファイルを消す。
+  Future<void> deleteManagement(String connectedAppId) async {
+    try {
+      final file = await _managementFile(connectedAppId);
       if (file == null || !await file.exists()) return;
       await file.delete();
     } catch (_) {

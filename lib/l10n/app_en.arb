@@ -7,6 +7,7 @@
   "commonAppNotFound": "App not found",
   "commonCancel": "Cancel",
   "commonDelete": "Delete",
+  "commonSelect": "Select",
 
   "dashboardEmptyMessage": "No apps registered yet",
   "dashboardAddApp": "Add App",
@@ -63,6 +64,22 @@
   "appDetailRejectionUnknownReason": "Reason unknown",
   "appDetailBuildFailureEmpty": "No build failure logs",
   "appDetailBuildNumber": "Build {number}",
+
+  "appDetailTabManagement": "Management",
+  "appDetailManagementStatusSectionTitle": "Review Status",
+  "appDetailManagementAutoStatusValue": "Automatically fetched status: {status}",
+  "appDetailManagementManualStatusLabel": "Manual Status Override",
+  "appDetailManagementAutoOption": "Automatic (no override)",
+  "appDetailManagementManualOverrideHint": "This override will be cleared automatically the next time an automatic fetch succeeds.",
+  "appDetailManagementDatesLabel": "Dates",
+  "appDetailManagementSubmittedAtLabel": "Submitted for Review",
+  "appDetailManagementReviewStartedAtLabel": "Review Started",
+  "appDetailManagementDateNotSet": "Not set",
+  "appDetailManagementClearDate": "Clear",
+  "appDetailManagementNoteLabel": "Notes / History",
+  "appDetailManagementNoteHint": "Record support inquiries or follow-up notes here",
+
+  "dashboardManualStatusSuffix": "{status} (Manual)",
 
   "errorReviewStatusFetchFailed": "Failed to fetch review status",
   "errorRejectionDetailsFetchFailed": "Failed to fetch rejection reasons",

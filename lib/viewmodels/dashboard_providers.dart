@@ -4,15 +4,22 @@ import '../models/connected_app.dart';
 import '../models/platform_type.dart';
 import '../models/review_status_snapshot.dart';
 import '../services/service_result.dart';
+import 'app_review_management_notifier.dart';
 import 'connected_apps_notifier.dart';
 import 'service_providers.dart';
 
 /// アプリ単体の最新審査状態（ダッシュボードのカード表示用）。
+/// 取得成功時、対象アプリの手動ステータス上書きを自動的にクリアする
+/// (AppReviewManagementのドキュメントコメント参照。手動上書きは「次回の
+/// 実取得成功まで」の一時的な訂正用途のため)。
 final latestReviewStatusProvider =
     FutureProvider.family<ReviewStatusSnapshot?, ConnectedApp>(
         (ref, app) async {
   final service = ref.watch(reviewStatusServiceProvider(app.platform));
   final data = (await service.fetchReviewStatus(app)).unwrap();
+  await ref
+      .read(appReviewManagementProvider(app.id).notifier)
+      .clearManualStatusOverrideAfterFetch();
   return data.isEmpty ? null : data.first;
 });
 

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/build_failure_log.dart';
@@ -13,6 +14,7 @@ import 'package:ririkan/router/app_router.dart';
 import 'package:ririkan/services/revenue_cat_service.dart';
 import 'package:ririkan/services/review_status_service.dart';
 import 'package:ririkan/services/service_result.dart';
+import 'package:ririkan/viewmodels/app_review_management_notifier.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
 import 'package:ririkan/viewmodels/service_providers.dart';
 import 'package:ririkan/viewmodels/widget_sync_provider.dart';
@@ -219,5 +221,52 @@ void main() {
     // 再試行後も同じフェイクServiceが同じ失敗を返すため、エラー表示が維持される
     // （再試行ボタン自体がクラッシュせず動作することの確認）。
     expect(find.text('リジェクト理由の取得に失敗しました'), findsOneWidget);
+  });
+
+  testWidgets('管理タブでステータスを手動上書きすると、ヒント文言が表示され'
+      'ダッシュボードにも反映される', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        iosFakeReviewStatus,
+      ],
+    );
+    addTearDown(container.dispose);
+    final app = await setupApp(container);
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/app-detail/${app.id}');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('管理'));
+    await tester.pumpAndSettle();
+
+    // 初期状態は「自動（上書きしない）」で、上書き中ヒントは出ていない。
+    expect(find.text('自動（上書きしない）'), findsOneWidget);
+    expect(find.textContaining('自動的に解除されます'), findsNothing);
+
+    // ドロップダウンを開いて「リジェクト」を選ぶ。
+    await tester.tap(find.byType(DropdownButtonFormField<ReviewStatusType?>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('リジェクト').last);
+    await tester.pumpAndSettle();
+
+    // 手動上書き中を示すヒントが表示される。
+    expect(find.textContaining('自動的に解除されます'), findsOneWidget);
+
+    // notifierの状態にも反映されている(UI操作が実際に永続化系のsetterまで
+    // 届いていることの確認)。
+    expect(
+      container.read(appReviewManagementProvider(app.id)).manualStatusOverride,
+      ReviewStatusType.rejected,
+    );
   });
 }

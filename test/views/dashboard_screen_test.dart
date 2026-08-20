@@ -8,10 +8,13 @@ import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/models/rejection_detail.dart';
 import 'package:ririkan/models/review_status_snapshot.dart';
+import 'package:ririkan/models/review_status_type.dart';
 import 'package:ririkan/router/app_router.dart';
 import 'package:ririkan/services/review_status_service.dart';
 import 'package:ririkan/services/service_result.dart';
+import 'package:ririkan/viewmodels/app_review_management_notifier.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
+import 'package:ririkan/viewmodels/dashboard_providers.dart';
 import 'package:ririkan/viewmodels/service_providers.dart';
 import 'package:ririkan/viewmodels/widget_sync_provider.dart';
 
@@ -56,7 +59,110 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
       const ServiceFailure(ServiceFailureReason.crashSummaries);
 }
 
+/// 常に固定のReviewStatusSnapshotを返すテスト用Service。
+/// 手動ステータス上書きが自動取得値より優先して表示されること・
+/// 次回の実取得成功で上書きが自動的にクリアされることを検証するために使う。
+class _FixedReviewStatusService implements ReviewStatusService {
+  _FixedReviewStatusService(this.status);
+
+  final ReviewStatusType status;
+
+  @override
+  Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
+    ConnectedApp app,
+  ) async =>
+      ServiceSuccess([
+        ReviewStatusSnapshot(
+          id: '${app.id}_latest',
+          connectedAppId: app.id,
+          versionString: '1.0.0',
+          statusType: status,
+          fetchedAt: DateTime(2026, 8, 5),
+        ),
+      ]);
+
+  @override
+  Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
+    ConnectedApp app,
+  ) async =>
+      const ServiceSuccess([]);
+
+  @override
+  Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
+    ConnectedApp app,
+  ) async =>
+      const ServiceSuccess([]);
+
+  @override
+  Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
+    String apiKey, {
+    List<String> knownPackageNames = const [],
+  }) async =>
+      const ServiceSuccess([]);
+
+  @override
+  Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
+    ConnectedApp app,
+  ) async =>
+      const ServiceSuccess([]);
+}
+
 void main() {
+  testWidgets(
+      '手動ステータス上書きは自動取得値より優先して表示され、'
+      '次回の実取得成功で自動的にクリアされる', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        reviewStatusServiceProvider(PlatformType.ios)
+            .overrideWithValue(_FixedReviewStatusService(ReviewStatusType.approved)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final app = await container.read(connectedAppsProvider.notifier).registerApp(
+          userId: 'u1',
+          platform: PlatformType.ios,
+          bundleIdOrPackageName: 'works.petit.app1',
+          displayName: 'テストアプリ',
+          apiKey: 'k',
+        );
+
+    // 管理タブでの手動上書き操作を模して、直接notifier経由で設定する
+    // (Widget操作は別途app_detail_screen_test.dart側で検証)。
+    await container
+        .read(appReviewManagementProvider(app.id).notifier)
+        .setManualStatusOverride(ReviewStatusType.rejected);
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 自動取得値(approved)ではなく手動上書き(rejected)が「（手動）」付きで表示される。
+    expect(find.textContaining('リジェクト'), findsOneWidget);
+    expect(find.textContaining('（手動）'), findsOneWidget);
+    expect(find.textContaining('承認済み'), findsNothing);
+
+    // 明示的な再取得(retry相当)が成功すると、手動上書きは自動的にクリアされ、
+    // 自動取得値(approved)がそのまま表示されるようになる。
+    container.invalidate(latestReviewStatusProvider(app));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('承認済み'), findsOneWidget);
+    expect(find.textContaining('（手動）'), findsNothing);
+    expect(
+      container.read(appReviewManagementProvider(app.id)).manualStatusOverride,
+      isNull,
+    );
+  });
+
   testWidgets('審査状態の取得に失敗すると再試行アイコンが表示され、タップで再取得される',
       (tester) async {
     final failingService = _AlwaysFailingReviewStatusService();

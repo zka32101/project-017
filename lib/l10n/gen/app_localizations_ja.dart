@@ -24,6 +24,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonDelete => '削除';
 
   @override
+  String get commonSelect => '選択';
+
+  @override
   String get dashboardEmptyMessage => 'まだ登録アプリがありません';
 
   @override
@@ -195,6 +198,53 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String appDetailBuildNumber(String number) {
     return 'Build $number';
+  }
+
+  @override
+  String get appDetailTabManagement => '管理';
+
+  @override
+  String get appDetailManagementStatusSectionTitle => '審査状態';
+
+  @override
+  String appDetailManagementAutoStatusValue(String status) {
+    return '自動取得された状態: $status';
+  }
+
+  @override
+  String get appDetailManagementManualStatusLabel => '手動でのステータス上書き';
+
+  @override
+  String get appDetailManagementAutoOption => '自動（上書きしない）';
+
+  @override
+  String get appDetailManagementManualOverrideHint =>
+      '次回の自動取得が成功すると、この上書きは自動的に解除されます。';
+
+  @override
+  String get appDetailManagementDatesLabel => '日付管理';
+
+  @override
+  String get appDetailManagementSubmittedAtLabel => '審査提出日';
+
+  @override
+  String get appDetailManagementReviewStartedAtLabel => '審査開始日';
+
+  @override
+  String get appDetailManagementDateNotSet => '未設定';
+
+  @override
+  String get appDetailManagementClearDate => 'クリア';
+
+  @override
+  String get appDetailManagementNoteLabel => 'メモ・対応履歴';
+
+  @override
+  String get appDetailManagementNoteHint => 'サポートへの問い合わせ内容や対応メモを記録できます';
+
+  @override
+  String dashboardManualStatusSuffix(String status) {
+    return '$status（手動）';
   }
 
   @override

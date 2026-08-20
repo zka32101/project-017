@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -113,9 +115,14 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
   }
 
   Future<void> _persist() async {
-    await ref.read(localStoreServiceProvider).save(
-          LocalState(apps: state, plan: ref.read(userPlanProvider)),
-        );
+    final localState = LocalState(apps: state, plan: ref.read(userPlanProvider));
+    await ref.read(localStoreServiceProvider).save(localState);
+    // クラウドバックアップ(CloudSyncService.backup())は失敗を内部で握りつぶし
+    // 例外を投げない設計のため、ここではtry/catch不要。ローカル保存の完了を
+    // 妨げないよう、awaitはせずfire-and-forgetで実行する(ネットワーク往復を
+    // registerApp/removeApp/reorder/setPlan等すべての呼び出し元の待ち時間に
+    // 上乗せしないため)。
+    unawaited(ref.read(cloudSyncServiceProvider).backup(localState));
   }
 
   /// デモアプリの固定ID（lib/constants/demo_app_ids.dart）。乱数（uuid）にすると、
@@ -187,7 +194,8 @@ final connectedAppsProvider =
   ConnectedAppsNotifier.new,
 );
 
-/// 現在のユーザープラン（Firebase Auth/Firestore連携は次フェーズ、それまではローカル永続化のみ）。
+/// 現在のユーザープラン（永続化はローカルJSON + Firestoreバックアップ、
+/// 詳細はCloudSyncServiceのドキュメントコメント参照）。
 /// 直接 state を書き換えず ConnectedAppsNotifier.setPlan() 経由で変更すること（永続化のため）。
 final userPlanProvider = StateProvider<UserPlan>((ref) => UserPlan.free);
 
@@ -205,8 +213,15 @@ final userPlanProvider = StateProvider<UserPlan>((ref) => UserPlan.free);
 /// このプロバイダに一切触れず、影響を受けない。
 final appBootstrapProvider = FutureProvider<void>((ref) async {
   final store = ref.read(localStoreServiceProvider);
-  final saved = await store.load();
   final notifier = ref.read(connectedAppsProvider.notifier);
+  var saved = await store.load();
+
+  // ローカルに保存データが無い場合、デモアプリへフォールバックする前に
+  // Firestoreバックアップからの復元を試みる(未設定・未サインイン・
+  // バックアップ無し・エラー時はnullが返り、これまで通りデモアプリへ
+  // フォールバックする。クラウドバックアップの性質・限界については
+  // CloudSyncServiceのドキュメントコメント参照)。
+  saved ??= await ref.read(cloudSyncServiceProvider).restore();
 
   if (saved != null) {
     ref.read(userPlanProvider.notifier).state = saved.plan;
@@ -217,7 +232,8 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
       notifier.restore(saved.apps);
     }
   } else {
-    // 保存データが無い（初回起動・永続化非対応環境）なら従来通りデモアプリを
+    // ローカル・Firestoreバックアップのどちらにも保存データが無い（初回起動・
+    // 永続化非対応環境・クラウド同期未設定等）なら従来通りデモアプリを
     // 自動登録する。デモアプリのIDは固定のため、繰り返し呼ばれてもSecure
     // Storageに新規エントリが増え続けることはない。
     await notifier.initializeDemoAppsIfNeeded();

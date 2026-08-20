@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'l10n/gen/app_localizations.dart';
 import 'router/app_router.dart';
 import 'services/ad_service.dart';
+import 'services/cloud_sync_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
 import 'theme/app_theme.dart';
@@ -24,14 +25,19 @@ void main() async {
   // flutter test環境では対応するproviderを必ずフェイクへoverrideするため、
   // この初期化コード自体がテストで実行されることはない)。
   WidgetsFlutterBinding.ensureInitialized();
-  // 3つとも互いに依存が無く、それぞれ_initializeSilently内で自身の失敗を
+  // 4つとも互いに依存が無く、それぞれ_initializeSilently内で自身の失敗を
   // 握りつぶすため、直列にawaitして起動を待たせる理由が無い。並行実行して
   // 起動時間を「合計」ではなく「最も遅い1つ」に短縮する。
+  // クラウド同期の初期化は、後でDashboardScreenからappBootstrapProviderが
+  // 評価される（runApp()より後、初回描画時）までに完了していればよいため、
+  // ここでrunApp()の前にawaitしておけば間に合う。
   await Future.wait([
     _initializeSilently('通知', () => LocalNotificationService().initialize()),
     _initializeSilently('広告SDK', () => const AdService().initialize()),
     _initializeSilently(
         '課金SDK', () => RevenueCatPurchaseService().initialize()),
+    _initializeSilently(
+        'クラウド同期', () => FirebaseCloudSyncService().initialize()),
   ]);
   runApp(const ProviderScope(child: RirikanApp()));
 }

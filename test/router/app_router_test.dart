@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -59,6 +60,21 @@ void main() {
       await pumpAppAt(tester, '/app-detail/does-not-exist');
 
       expect(find.text('アプリが見つかりません'), findsOneWidget);
+    });
+
+    testWidgets('?tab=<index>クエリがあれば該当タブが初期表示される'
+        '(リジェクト通知タップ導線、NotificationService参照)', (tester) async {
+      final app = await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.app1',
+            displayName: 'テストアプリ',
+            apiKey: 'k',
+          );
+
+      await pumpAppAt(tester, '/app-detail/${app.id}?tab=3');
+
+      expect(tester.widget<TabBar>(find.byType(TabBar)).controller?.index, 3);
     });
   });
 

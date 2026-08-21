@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'l10n/gen/app_localizations.dart';
 import 'router/app_router.dart';
@@ -25,6 +26,16 @@ void main() async {
   // flutter test環境では対応するproviderを必ずフェイクへoverrideするため、
   // この初期化コード自体がテストで実行されることはない)。
   WidgetsFlutterBinding.ensureInitialized();
+
+  // GoRouterはrunApp()より前にここで1回だけ作る(RirikanApp.build()内で
+  // 毎回作り直すと、通知タップ用に登録したコールバックが古いルーター
+  // インスタンスを指したままになってしまうため)。
+  final router = buildAppRouter();
+  // 通知タップ時にディープリンク先を開けるよう、GoRouterのpushを
+  // NotificationServiceへ渡す(審査状態の個別通知、Should機能)。
+  final notificationService =
+      LocalNotificationService(onNotificationTap: router.push);
+
   // 4つとも互いに依存が無く、それぞれ_initializeSilently内で自身の失敗を
   // 握りつぶすため、直列にawaitして起動を待たせる理由が無い。並行実行して
   // 起動時間を「合計」ではなく「最も遅い1つ」に短縮する。
@@ -32,18 +43,26 @@ void main() async {
   // 評価される（runApp()より後、初回描画時）までに完了していればよいため、
   // ここでrunApp()の前にawaitしておけば間に合う。
   await Future.wait([
-    _initializeSilently('通知', () => LocalNotificationService().initialize()),
+    _initializeSilently('通知', () async {
+      await notificationService.initialize();
+      // アプリが完全終了状態から通知タップで起動された場合、通常の
+      // onDidReceiveNotificationResponseは発火しないため、起動直後に
+      // 明示的にペイロードを確認してディープリンク先へ遷移させる。
+      final launchPayload = await notificationService.getLaunchPayload();
+      if (launchPayload != null) router.go(launchPayload);
+    }),
     _initializeSilently('広告SDK', () => const AdService().initialize()),
     _initializeSilently(
         '課金SDK', () => RevenueCatPurchaseService().initialize()),
     _initializeSilently(
         'クラウド同期', () => FirebaseCloudSyncService().initialize()),
   ]);
-  runApp(const ProviderScope(child: RirikanApp()));
+  runApp(ProviderScope(child: RirikanApp(router: router)));
 }
 
 class RirikanApp extends StatelessWidget {
-  const RirikanApp({super.key});
+  final GoRouter router;
+  const RirikanApp({super.key, required this.router});
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +76,7 @@ class RirikanApp extends StatelessWidget {
       // 文字列はlib/l10n/*.arbで管理し、flutter gen-l10nでAppLocalizationsを生成する。
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      routerConfig: buildAppRouter(),
+      routerConfig: router,
     );
   }
 }

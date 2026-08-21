@@ -12,12 +12,17 @@ import 'review_status_type.dart';
 ///   App Store Connect/Play Console のAPIには相当するフィールドが無いため、
 ///   完全にこのアプリ内だけのローカル管理情報）。
 /// - note: 対応履歴・メモの自由記述欄。
+/// - lastKnownStatus: 審査状態の個別通知（Should機能）用に、前回実取得に
+///   成功した際の状態を記録しておく内部トラッキング項目。ユーザーが編集する
+///   項目ではないため isEmpty の判定には含めない（「何も管理情報を
+///   設定していないか」という意味を保つため）。
 class AppReviewManagement {
   final String connectedAppId;
   final ReviewStatusType? manualStatusOverride;
   final DateTime? submittedAt;
   final DateTime? reviewStartedAt;
   final String note;
+  final ReviewStatusType? lastKnownStatus;
   final DateTime? updatedAt;
 
   const AppReviewManagement({
@@ -26,6 +31,7 @@ class AppReviewManagement {
     this.submittedAt,
     this.reviewStartedAt,
     this.note = '',
+    this.lastKnownStatus,
     this.updatedAt,
   });
 
@@ -52,6 +58,9 @@ class AppReviewManagement {
             ? null
             : DateTime.tryParse(json['reviewStartedAt'] as String),
         note: json['note'] as String? ?? '',
+        lastKnownStatus: json['lastKnownStatus'] == null
+            ? null
+            : ReviewStatusType.fromKey(json['lastKnownStatus'] as String),
         updatedAt: json['updatedAt'] == null
             ? null
             : DateTime.tryParse(json['updatedAt'] as String),
@@ -63,6 +72,7 @@ class AppReviewManagement {
         'submittedAt': submittedAt?.toIso8601String(),
         'reviewStartedAt': reviewStartedAt?.toIso8601String(),
         'note': note,
+        'lastKnownStatus': lastKnownStatus?.name,
         'updatedAt': updatedAt?.toIso8601String(),
       };
 }

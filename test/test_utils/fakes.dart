@@ -12,6 +12,7 @@ import 'package:ririkan/models/crash_summary.dart';
 import 'package:ririkan/models/discoverable_app.dart';
 import 'package:ririkan/models/rejection_detail.dart';
 import 'package:ririkan/models/review_status_snapshot.dart';
+import 'package:ririkan/models/review_status_type.dart';
 import 'package:ririkan/models/submission_checklist_item.dart';
 import 'package:ririkan/services/local_store_service.dart';
 import 'package:ririkan/services/notification_service.dart';
@@ -155,6 +156,23 @@ class FakeNotificationService implements NotificationService {
   Future<void> cancelDailyReminder() async {
     cancelCalled = true;
   }
+
+  ConnectedApp? lastNotifiedApp;
+  ReviewStatusType? lastNotifiedStatus;
+  int statusChangeNotificationCount = 0;
+
+  @override
+  Future<void> showReviewStatusChangedNotification({
+    required ConnectedApp app,
+    required ReviewStatusType newStatus,
+  }) async {
+    lastNotifiedApp = app;
+    lastNotifiedStatus = newStatus;
+    statusChangeNotificationCount++;
+  }
+
+  @override
+  Future<String?> getLaunchPayload() async => null;
 }
 
 /// AppStoreConnectService/PlayConsoleServiceは今やdiscoverApps/

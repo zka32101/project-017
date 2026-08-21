@@ -1052,6 +1052,12 @@ abstract class AppLocalizations {
   /// **'切断に失敗しました: {error}'**
   String settingsRevenueCatDisconnectFailed(String error);
 
+  /// No description provided for @notificationStatusChangedBody.
+  ///
+  /// In ja, this message translates to:
+  /// **'{appName}の審査状態が「{status}」に変わりました'**
+  String notificationStatusChangedBody(String appName, String status);
+
   /// No description provided for @reviewStatusWaitingReview.
   ///
   /// In ja, this message translates to:

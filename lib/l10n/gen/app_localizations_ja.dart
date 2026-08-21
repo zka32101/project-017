@@ -545,6 +545,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String notificationStatusChangedBody(String appName, String status) {
+    return '$appNameの審査状態が「$status」に変わりました';
+  }
+
+  @override
   String get reviewStatusWaitingReview => '審査待ち';
 
   @override

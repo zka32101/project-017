@@ -10,6 +10,7 @@
   "commonDelete": "削除",
   "commonSelect": "選択",
   "commonClose": "閉じる",
+  "commonSave": "保存",
 
   "dashboardEmptyMessage": "まだ登録アプリがありません",
   "dashboardAddApp": "アプリを追加",
@@ -108,8 +109,10 @@
   "@appDetailBuildNumber": {
     "placeholders": {"number": {"type": "String"}}
   },
+  "appDetailMockDataBanner": "サンプルデータを表示しています（Apple/Googleの公式APIに対応するエンドポイントが無いため）",
 
   "appDetailTabManagement": "管理",
+  "appDetailManagementDisplayNameLabel": "表示名",
   "appDetailManagementStatusSectionTitle": "審査状態",
   "appDetailManagementAutoStatusValue": "自動取得された状態: {status}",
   "@appDetailManagementAutoStatusValue": {
@@ -201,6 +204,11 @@
   "notificationPromptBody": "通知を許可すると、毎朝決まった時刻に審査状況確認のリマインダーをお届けします。",
   "notificationPromptAllow": "通知を許可する",
   "notificationPromptLater": "あとで",
+  "notificationDailyReminderBody": "本日の審査状況をチェックしましょう",
+  "notificationDailyChannelName": "毎朝の状態サマリー",
+  "notificationDailyChannelDescription": "登録アプリの審査状況を毎朝リマインドします",
+  "notificationStatusChangeChannelName": "審査状態の変化通知",
+  "notificationStatusChangeChannelDescription": "登録アプリの審査状態が変化した時に通知します",
 
   "paywallTitle": "広告を消しませんか？",
   "paywallBody": "月額料金だけで、アプリ内の広告表示を全て非表示にできます。",
@@ -240,6 +248,9 @@
   "@settingsApiKeyMasked": {
     "placeholders": {"masked": {"type": "String"}}
   },
+  "settingsRotateApiKeyTooltip": "APIキーを更新",
+  "settingsRotateApiKeyTitle": "APIキーを再登録",
+  "settingsRotateApiKeySuccess": "APIキーを更新しました",
   "settingsRemoveConfirmTitle": "このアプリを削除しますか？",
   "settingsRemoveConfirmMessage": "「{appName}」を削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。",
   "@settingsRemoveConfirmMessage": {

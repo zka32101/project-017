@@ -9,6 +9,7 @@
   "commonDelete": "Delete",
   "commonSelect": "Select",
   "commonClose": "Close",
+  "commonSave": "Save",
 
   "dashboardEmptyMessage": "No apps registered yet",
   "dashboardAddApp": "Add App",
@@ -73,8 +74,10 @@
   "appDetailRejectionUnknownReason": "Reason unknown",
   "appDetailBuildFailureEmpty": "No build failure logs",
   "appDetailBuildNumber": "Build {number}",
+  "appDetailMockDataBanner": "Showing sample data (no official Apple/Google API endpoint exists for this yet)",
 
   "appDetailTabManagement": "Management",
+  "appDetailManagementDisplayNameLabel": "Display Name",
   "appDetailManagementStatusSectionTitle": "Review Status",
   "appDetailManagementAutoStatusValue": "Automatically fetched status: {status}",
   "appDetailManagementManualStatusLabel": "Manual Status Override",
@@ -139,6 +142,11 @@
   "notificationPromptBody": "Allow notifications and we'll send you a daily reminder to check your apps' review status.",
   "notificationPromptAllow": "Allow Notifications",
   "notificationPromptLater": "Later",
+  "notificationDailyReminderBody": "Check today's review status",
+  "notificationDailyChannelName": "Daily Status Summary",
+  "notificationDailyChannelDescription": "Reminds you every morning to check your registered apps' review status",
+  "notificationStatusChangeChannelName": "Review Status Changes",
+  "notificationStatusChangeChannelDescription": "Notifies you when a registered app's review status changes",
 
   "paywallTitle": "Remove ads?",
   "paywallBody": "For a small monthly fee, you can remove all ads shown in the app.",
@@ -166,6 +174,9 @@
   "settingsNotificationPermissionDenied": "Notifications are not allowed. Please enable them in your device settings",
   "settingsRemoveFailed": "Failed to remove: {error}",
   "settingsApiKeyMasked": "API Key: {masked}",
+  "settingsRotateApiKeyTooltip": "Update API key",
+  "settingsRotateApiKeyTitle": "Re-register API key",
+  "settingsRotateApiKeySuccess": "API key updated",
   "settingsRemoveConfirmTitle": "Remove this app?",
   "settingsRemoveConfirmMessage": "Removing \"{appName}\" will also delete its saved API key and checklist progress. This cannot be undone.",
   "@settingsRemoveConfirmMessage": {

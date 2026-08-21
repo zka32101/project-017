@@ -8,6 +8,7 @@ import '../../models/app_review_management.dart';
 import '../../models/build_failure_log.dart';
 import '../../models/connected_app.dart';
 import '../../models/crash_summary.dart';
+import '../../models/platform_type.dart';
 import '../../models/rejection_detail.dart';
 import '../../models/review_status_snapshot.dart';
 import '../../models/review_status_type.dart';
@@ -17,6 +18,17 @@ import '../../viewmodels/app_detail_providers.dart';
 import '../../viewmodels/app_review_management_notifier.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
 import '../../viewmodels/dashboard_providers.dart';
+
+/// タグ・表示名などConnectedApp側のフィールドは、遷移時に渡された静的な
+/// スナップショット(widget.app)ではなく、connectedAppsProviderの最新値を
+/// 都度参照したい(この画面の中で編集され得るため)。該当IDが見つからない
+/// (削除された等)場合はfallbackをそのまま返す。
+ConnectedApp resolveLiveApp(List<ConnectedApp> apps, ConnectedApp fallback) =>
+    apps.cast<ConnectedApp?>().firstWhere(
+          (a) => a?.id == fallback.id,
+          orElse: () => null,
+        ) ??
+    fallback;
 
 /// アプリ詳細: 審査履歴/クラッシュ推移/売上・DL数/リジェクト理由/ビルド失敗ログ/管理の6タブ
 /// （Must#1拡張＋Should機能の売上サマリー・管理項目）。
@@ -58,9 +70,13 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final app = widget.app;
+    // AppBarタイトルは表示名リネーム機能(_ManagementTab参照)を反映できるよう、
+    // widget.app(遷移時の静的なスナップショット)ではなくconnectedAppsProvider
+    // を都度watchして最新の表示名を使う。
+    final displayName = resolveLiveApp(ref.watch(connectedAppsProvider), app).displayName;
     return Scaffold(
       appBar: AppBar(
-        title: Text(app.displayName),
+        title: Text(displayName),
         actions: [
           IconButton(
             icon: const Icon(Icons.ios_share_outlined),
@@ -114,22 +130,65 @@ class _AsyncListTab<T> extends ConsumerWidget {
   final Widget Function(BuildContext context, AppLocalizations l10n, List<T> items)
       dataBuilder;
 
+  /// 非nullなら、状態(loading/error/empty/data)に関わらず常に先頭へ
+  /// 注意バナーを表示する。Apple/Google公式APIに対応エンドポイントが無く
+  /// サンプルデータのまま表示しているタブ(リジェクト理由・ビルド失敗ログ・
+  /// iOSのクラッシュ推移)向けの開示用（settingsRevenueCatNotConnectedと
+  /// 同じ「サンプルデータである旨を隠さず伝える」方針）。
+  final String Function(AppLocalizations l10n)? bannerMessage;
+
   const _AsyncListTab({
     required this.watch,
     required this.invalidate,
     required this.emptyMessage,
     required this.dataBuilder,
+    this.bannerMessage,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    return watch(ref).when(
+    final content = watch(ref).when(
       data: (items) => items.isEmpty
           ? _EmptyTab(message: emptyMessage(l10n))
           : dataBuilder(context, l10n, items),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => _ErrorTab(error: e, onRetry: () => invalidate(ref)),
+    );
+    final banner = bannerMessage;
+    if (banner == null) return content;
+    return Column(
+      children: [
+        _MockDataBanner(message: banner(l10n)),
+        Expanded(child: content),
+      ],
+    );
+  }
+}
+
+/// 「サンプルデータを表示中」の開示バナー(_AsyncListTab.bannerMessage参照)。
+class _MockDataBanner extends StatelessWidget {
+  final String message;
+  const _MockDataBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: AppTheme.surfaceVariant,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, size: 16, color: AppTheme.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12, color: AppTheme.warning),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -183,6 +242,13 @@ class _CrashTrendTab extends ConsumerWidget {
       watch: (ref) => ref.watch(crashSummariesProvider(app)),
       invalidate: (ref) => ref.invalidate(crashSummariesProvider(app)),
       emptyMessage: (l10n) => l10n.appDetailCrashDataEmpty,
+      // iOSはApp Store Connect APIにクラッシュ率取得の公開エンドポイントが
+      // 無いためサンプルデータのまま(app_store_connect_service.dart参照)。
+      // Androidは Play Developer Reporting API から実データを取得できるため
+      // バナーは不要。
+      bannerMessage: app.platform == PlatformType.ios
+          ? (l10n) => l10n.appDetailMockDataBanner
+          : null,
       dataBuilder: (context, l10n, items) => ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
@@ -307,6 +373,10 @@ class _RejectionTab extends ConsumerWidget {
       watch: (ref) => ref.watch(rejectionDetailsProvider(app)),
       invalidate: (ref) => ref.invalidate(rejectionDetailsProvider(app)),
       emptyMessage: (l10n) => l10n.appDetailRejectionEmpty,
+      // iOS/Androidともに、リジェクト理由本文を取得する公式APIが存在しない
+      // ためサンプルデータのまま(app_store_connect_service.dart/
+      // play_console_service.dart参照)。
+      bannerMessage: (l10n) => l10n.appDetailMockDataBanner,
       dataBuilder: (context, l10n, items) => ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
@@ -336,6 +406,10 @@ class _BuildFailureTab extends ConsumerWidget {
       watch: (ref) => ref.watch(buildFailureLogsProvider(app)),
       invalidate: (ref) => ref.invalidate(buildFailureLogsProvider(app)),
       emptyMessage: (l10n) => l10n.appDetailBuildFailureEmpty,
+      // iOS/Androidともに、ビルド失敗の詳細ログを取得する公式APIが存在しない
+      // ためサンプルデータのまま(app_store_connect_service.dart/
+      // play_console_service.dart参照)。
+      bannerMessage: (l10n) => l10n.appDetailMockDataBanner,
       dataBuilder: (context, l10n, items) => ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
@@ -417,19 +491,21 @@ class _ManagementTabState extends ConsumerState<_ManagementTab> {
     final autoStatus = ref.watch(latestReviewStatusProvider(widget.app));
     final notifier = ref.read(appReviewManagementProvider(appId).notifier);
 
-    // タグはConnectedApp側のフィールドなので、widget.app(遷移時に渡された
-    // 静的なスナップショット)ではなく、connectedAppsProviderを都度watchして
-    // 編集直後の最新値を表示する。
-    final apps = ref.watch(connectedAppsProvider);
-    final liveApp = apps.cast<ConnectedApp?>().firstWhere(
-          (a) => a?.id == appId,
-          orElse: () => null,
-        ) ??
-        widget.app;
+    // タグ・表示名はConnectedApp側のフィールドなので、widget.app(遷移時に
+    // 渡された静的なスナップショット)ではなく、connectedAppsProviderを
+    // 都度watchして編集直後の最新値を表示する。
+    final liveApp = resolveLiveApp(ref.watch(connectedAppsProvider), widget.app);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _DisplayNameCard(
+          l10n: l10n,
+          displayName: liveApp.displayName,
+          onChanged: (name) =>
+              ref.read(connectedAppsProvider.notifier).renameApp(appId, name),
+        ),
+        const SizedBox(height: 16),
         _ManualStatusCard(
           l10n: l10n,
           autoStatus: autoStatus,
@@ -627,6 +703,84 @@ class _DateRow extends StatelessWidget {
           child: Text(l10n.commonSelect),
         ),
       ],
+    );
+  }
+}
+
+/// 表示名の編集。登録時に自動生成された名前(特にAndroidはパッケージ名から
+/// 推測するため実際のストア表示名と一致するとは限らない、
+/// play_console_service.dart参照)を訂正するために使う。_NoteCardと同じく、
+/// フォーカスが外れた時にだけ確定する(毎キー入力で永続化・AppBarタイトルの
+/// 再描画を走らせないため)。
+class _DisplayNameCard extends StatefulWidget {
+  final AppLocalizations l10n;
+  final String displayName;
+  final ValueChanged<String> onChanged;
+
+  const _DisplayNameCard({
+    required this.l10n,
+    required this.displayName,
+    required this.onChanged,
+  });
+
+  @override
+  State<_DisplayNameCard> createState() => _DisplayNameCardState();
+}
+
+class _DisplayNameCardState extends State<_DisplayNameCard> {
+  late final _controller = TextEditingController(text: widget.displayName);
+  late final _focusNode = FocusNode()..addListener(_onFocusChange);
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus) return;
+    final trimmed = _controller.text.trim();
+    if (trimmed.isNotEmpty && trimmed != widget.displayName) {
+      widget.onChanged(trimmed);
+    } else {
+      // 空欄のまま・変更無しなら元の表示名に戻す(空の表示名を許可しない)。
+      _controller.text = widget.displayName;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _DisplayNameCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 保存が確定して呼び出し元(_ManagementTabState)がconnectedAppsProvider
+    // 経由で新しい表示名を渡してきた場合に追従する。入力中(フォーカス中)は
+    // 上書きしない。
+    if (!_focusNode.hasFocus && widget.displayName != _controller.text) {
+      _controller.text = widget.displayName;
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.l10n.appDetailManagementDisplayNameLabel,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('displayNameInput'),
+              controller: _controller,
+              focusNode: _focusNode,
+              decoration: const InputDecoration(isDense: true),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

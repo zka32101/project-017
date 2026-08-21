@@ -155,6 +155,75 @@ void main() {
 
     // MockDataService.crashSummariesFor: 7日分、クラッシュフリー率99.6%固定。
     expect(find.textContaining('クラッシュフリー率 99.6%'), findsWidgets);
+    // iOSはApp Store Connect APIにクラッシュ率取得の公開エンドポイントが
+    // 無くサンプルデータのため、開示バナーが表示される。
+    expect(find.textContaining('サンプルデータを表示しています'), findsOneWidget);
+  });
+
+  testWidgets('Androidのクラッシュ推移タブにはサンプルデータの開示バナーが出ない'
+      '(Play Developer Reporting APIから実データを取得するため)', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final app = await container.read(connectedAppsProvider.notifier).registerApp(
+          userId: 'u1',
+          platform: PlatformType.android,
+          bundleIdOrPackageName: 'works.petit.android1',
+          displayName: 'Android詳細画面テストアプリ',
+          apiKey: 'k',
+        );
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/app-detail/${app.id}');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('クラッシュ推移'));
+    await tester.pumpAndSettle();
+
+    // 'k'は実際の認証情報では無いため取得自体は失敗するが(エラー表示)、
+    // それに関わらずAndroidでは開示バナー自体が出ないことを確認する
+    // (real APIを使う設計のため、mockData由来の開示は不要)。
+    expect(find.textContaining('サンプルデータを表示しています'), findsNothing);
+  });
+
+  testWidgets('ビルド失敗ログタブにサンプルデータの開示バナーが表示される'
+      '(iOS/Androidともに公式APIが存在しないため)', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        iosFakeReviewStatus,
+      ],
+    );
+    addTearDown(container.dispose);
+    final app = await setupApp(container);
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/app-detail/${app.id}');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ビルド失敗ログ'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('サンプルデータを表示しています'), findsOneWidget);
   });
 
   testWidgets('売上・DL数タブに通貨コード（JPY）付きで金額が表示される', (tester) async {
@@ -214,6 +283,9 @@ void main() {
 
     expect(find.text('リジェクト理由の取得に失敗しました'), findsOneWidget);
     expect(find.text('再試行'), findsOneWidget);
+    // リジェクト理由は公式APIが存在せず常にサンプルデータのため、状態(この
+    // テストではエラー)に関わらず開示バナーが表示される(_AsyncListTab参照)。
+    expect(find.textContaining('サンプルデータを表示しています'), findsOneWidget);
 
     await tester.tap(find.text('再試行'));
     await tester.pumpAndSettle();
@@ -318,6 +390,58 @@ void main() {
     expect(
       container.read(connectedAppsProvider).firstWhere((a) => a.id == app.id).tags,
       isEmpty,
+    );
+  });
+
+  testWidgets('管理タブで表示名を変更すると、フォーカスが外れた時に保存されAppBarタイトルにも反映される',
+      (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        iosFakeReviewStatus,
+      ],
+    );
+    addTearDown(container.dispose);
+    final app = await setupApp(container);
+
+    final router = buildAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: wrapWithLocalizedRouter(router),
+      ),
+    );
+    router.go('/app-detail/${app.id}');
+    await tester.pumpAndSettle();
+
+    expect(find.text('詳細画面テストアプリ'), findsWidgets); // AppBarタイトル
+
+    await tester.tap(find.text('管理'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('displayNameInput')), '改名後のアプリ');
+    // _NoteCardと同じくフォーカスが外れた時に確定する設計のため、明示的に
+    // フォーカスを外す(実機でのタップ遷移相当)。
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+
+    expect(
+      container.read(connectedAppsProvider).firstWhere((a) => a.id == app.id).displayName,
+      '改名後のアプリ',
+    );
+    // AppBarタイトルはwidget.app(静的スナップショット)ではなく
+    // connectedAppsProviderの最新値を見るため、遷移し直さなくても反映される
+    // (管理タブの入力欄自体にも同じテキストが表示されているため、AppBarに
+    // 絞って検索する)。
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('改名後のアプリ')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('詳細画面テストアプリ')),
+      findsNothing,
     );
   });
 }

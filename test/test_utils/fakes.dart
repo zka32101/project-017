@@ -146,6 +146,9 @@ class FakeNotificationService implements NotificationService {
   }
 
   @override
+  Future<bool> isPermissionGranted() async => permissionGranted;
+
+  @override
   Future<void> scheduleDailyReminder({int hour = 9, int minute = 0}) async {
     scheduleCalled = true;
     scheduledHour = hour;

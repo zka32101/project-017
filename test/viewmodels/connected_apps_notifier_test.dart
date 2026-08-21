@@ -261,6 +261,118 @@ void main() {
         containsAll(['Bulk App 1', 'Bulk App 2']),
       );
     });
+
+    test('同じplatform+bundleIdOrPackageNameで既に登録済みのアプリは重複登録せずスキップする',
+        () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.bulk1',
+        displayName: '既存のBulk App 1',
+        apiKey: 'k',
+      );
+
+      final registered = await notifier.registerAppsBulk(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        apiKey: 'shared-key',
+        discovered: const [
+          DiscoverableApp(
+            bundleIdOrPackageName: 'works.petit.bulk1', // 既存と重複
+            displayName: 'Bulk App 1',
+          ),
+          DiscoverableApp(
+            bundleIdOrPackageName: 'works.petit.bulk2', // 新規
+            displayName: 'Bulk App 2',
+          ),
+        ],
+      );
+
+      // 新規の1件だけが登録され、重複分は登録されない(既存の表示名も
+      // 上書きされない)。
+      expect(registered, hasLength(1));
+      expect(registered.single.displayName, 'Bulk App 2');
+      final state = container.read(connectedAppsProvider);
+      expect(state, hasLength(2));
+      expect(
+        state.firstWhere((a) => a.bundleIdOrPackageName == 'works.petit.bulk1').displayName,
+        '既存のBulk App 1',
+      );
+    });
+
+    test('別プラットフォームの同じbundleIdOrPackageNameは重複扱いしない', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.shared',
+        displayName: 'iOS版',
+        apiKey: 'k',
+      );
+
+      final registered = await notifier.registerAppsBulk(
+        userId: 'u1',
+        platform: PlatformType.android,
+        apiKey: 'shared-key',
+        discovered: const [
+          DiscoverableApp(
+            bundleIdOrPackageName: 'works.petit.shared',
+            displayName: 'Android版',
+          ),
+        ],
+      );
+
+      expect(registered, hasLength(1));
+      expect(container.read(connectedAppsProvider), hasLength(2));
+    });
+  });
+
+  group('ConnectedAppsNotifier.updateApiKey（APIキーの再登録）', () {
+    test('Secure Storageの中身だけ差し替わり、ConnectedApp自体は変化しない', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      final app = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'a',
+        displayName: 'A',
+        apiKey: 'old-key',
+      );
+
+      await notifier.updateApiKey(app.id, 'new-key');
+
+      expect(
+        await container.read(secureStorageServiceProvider).readApiKey(app.id),
+        'new-key',
+      );
+      expect(container.read(connectedAppsProvider).single, app);
+    });
+  });
+
+  group('ConnectedAppsNotifier.renameApp（表示名の変更）', () {
+    test('該当アプリの表示名だけが変更され、他アプリは影響を受けない', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      final a = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'a',
+        displayName: 'Before',
+        apiKey: 'k',
+      );
+      final b = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'b',
+        displayName: 'B',
+        apiKey: 'k',
+      );
+
+      await notifier.renameApp(a.id, 'After');
+
+      final state = container.read(connectedAppsProvider);
+      expect(state.firstWhere((app) => app.id == a.id).displayName, 'After');
+      expect(state.firstWhere((app) => app.id == b.id).displayName, 'B');
+    });
   });
 
   group('ConnectedAppsNotifier.reorder', () {

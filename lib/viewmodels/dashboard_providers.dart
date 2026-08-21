@@ -131,7 +131,14 @@ final filteredSortedConnectedAppsProvider = Provider<List<ConnectedApp>>((ref) {
   final apps = ref.watch(sortedConnectedAppsProvider);
   final query = ref.watch(dashboardSearchQueryProvider).trim().toLowerCase();
   final platformFilter = ref.watch(dashboardPlatformFilterProvider);
-  final tagFilter = ref.watch(dashboardTagFilterProvider);
+  final rawTagFilter = ref.watch(dashboardTagFilterProvider);
+  final allTags = ref.watch(allTagsProvider);
+  // フィルター条件の保存機能で復元したタグが、その後全アプリから削除されて
+  // 存在しなくなっているケースを「絞り込み無し」として扱う。そうしないと
+  // 全件除外(0件)のまま抜け出せなくなる(タグチップ自体もallTagsProvider
+  // ベースで描画されるため、消えたタグのチップは元々表示されない)。
+  final tagFilter =
+      (rawTagFilter != null && allTags.contains(rawTagFilter)) ? rawTagFilter : null;
   final attentionOnly = ref.watch(dashboardAttentionOnlyProvider);
   final sortOption = ref.watch(dashboardSortOptionProvider);
 

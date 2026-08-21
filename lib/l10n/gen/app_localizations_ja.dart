@@ -30,6 +30,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonClose => '閉じる';
 
   @override
+  String get commonSave => '保存';
+
+  @override
   String get dashboardEmptyMessage => 'まだ登録アプリがありません';
 
   @override
@@ -237,7 +240,14 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get appDetailMockDataBanner =>
+      'サンプルデータを表示しています（Apple/Googleの公式APIに対応するエンドポイントが無いため）';
+
+  @override
   String get appDetailTabManagement => '管理';
+
+  @override
+  String get appDetailManagementDisplayNameLabel => '表示名';
 
   @override
   String get appDetailManagementStatusSectionTitle => '審査状態';
@@ -435,6 +445,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationPromptLater => 'あとで';
 
   @override
+  String get notificationDailyReminderBody => '本日の審査状況をチェックしましょう';
+
+  @override
+  String get notificationDailyChannelName => '毎朝の状態サマリー';
+
+  @override
+  String get notificationDailyChannelDescription => '登録アプリの審査状況を毎朝リマインドします';
+
+  @override
+  String get notificationStatusChangeChannelName => '審査状態の変化通知';
+
+  @override
+  String get notificationStatusChangeChannelDescription =>
+      '登録アプリの審査状態が変化した時に通知します';
+
+  @override
   String get paywallTitle => '広告を消しませんか？';
 
   @override
@@ -514,6 +540,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String settingsApiKeyMasked(String masked) {
     return 'APIキー: $masked';
   }
+
+  @override
+  String get settingsRotateApiKeyTooltip => 'APIキーを更新';
+
+  @override
+  String get settingsRotateApiKeyTitle => 'APIキーを再登録';
+
+  @override
+  String get settingsRotateApiKeySuccess => 'APIキーを更新しました';
 
   @override
   String get settingsRemoveConfirmTitle => 'このアプリを削除しますか？';

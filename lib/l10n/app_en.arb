@@ -8,6 +8,7 @@
   "commonCancel": "Cancel",
   "commonDelete": "Delete",
   "commonSelect": "Select",
+  "commonClose": "Close",
 
   "dashboardEmptyMessage": "No apps registered yet",
   "dashboardAddApp": "Add App",
@@ -26,6 +27,8 @@
   "dashboardBulkDeleteTooltip": "Delete selected apps",
   "dashboardBulkDeleteConfirmTitle": "Delete {count} selected apps?",
   "dashboardBulkDeleteConfirmMessage": "Deleting will also remove their saved API keys and checklist progress. This cannot be undone.",
+  "dashboardBulkTagEditTooltip": "Edit tags",
+  "dashboardBulkTagEditTitle": "Edit tags for {count} apps",
 
   "appRegistrationTitle": "Register App",
   "appRegistrationApiKeyRequired": "Please enter an API key",
@@ -155,6 +158,8 @@
   "settingsPlanPro": "Ad-free",
   "settingsPlanFree": "Ads shown",
   "settingsAppsManagementLabel": "Manage Registered Apps",
+  "settingsExportRosterTooltip": "Export app list as CSV",
+  "settingsExportRosterFailed": "Failed to export",
   "settingsAppsCount": "{count} registered",
   "settingsNotificationLabel": "Daily Reminder",
   "settingsNotificationSubtitle": "Sends a reminder to check review status every day at 9:00 AM",

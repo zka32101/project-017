@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/connected_app.dart';
@@ -174,3 +176,68 @@ final dashboardSelectionModeProvider = StateProvider<bool>((ref) => false);
 /// DashboardScreen側で明示的にクリアする(次回入った時に前回の選択が
 /// 残っていると混乱するため)。
 final dashboardSelectedAppIdsProvider = StateProvider<Set<String>>((ref) => {});
+
+/// フィルター/ソート設定の永続化用キー(SecureStorageService経由、
+/// notificationsEnabledStorageKeyと同じ「小さな値をJSON化して1キーに
+/// まとめて保存する」パターン)。検索キーワードは毎回リセットして良い
+/// 一時的な入力のため対象外(TextField自体が状態を持たないため復元も不要)。
+const dashboardFilterPrefsStorageKey = 'dashboard_filter_prefs';
+
+/// アプリ再起動後も前回の絞り込み条件を復元する(大量アプリ管理機能の続き)。
+/// checklistBootstrapProvider等と同じパターンでDashboardScreen側からbareに
+/// watchする。復元に失敗しても(未保存・JSON壊れ等)デフォルト値のまま
+/// 画面表示は継続する。
+final dashboardFilterPrefsBootstrapProvider = FutureProvider<void>((ref) async {
+  final String? raw;
+  try {
+    raw = await ref
+        .read(secureStorageServiceProvider)
+        .readValue(dashboardFilterPrefsStorageKey);
+  } catch (_) {
+    return;
+  }
+  if (raw == null) return;
+
+  try {
+    final json = jsonDecode(raw) as Map<String, dynamic>;
+    final platformName = json['platformFilter'] as String?;
+    ref.read(dashboardPlatformFilterProvider.notifier).state = platformName == null
+        ? null
+        : PlatformType.values.firstWhere(
+            (p) => p.name == platformName,
+            orElse: () => PlatformType.ios,
+          );
+    ref.read(dashboardTagFilterProvider.notifier).state =
+        json['tagFilter'] as String?;
+    ref.read(dashboardAttentionOnlyProvider.notifier).state =
+        json['attentionOnly'] as bool? ?? false;
+    final sortName = json['sortOption'] as String?;
+    ref.read(dashboardSortOptionProvider.notifier).state =
+        DashboardSortOption.values.firstWhere(
+      (s) => s.name == sortName,
+      orElse: () => DashboardSortOption.manual,
+    );
+  } catch (_) {
+    // 保存データの形式が壊れていてもデフォルト値のまま画面表示は継続する。
+  }
+});
+
+/// プラットフォーム/タグ/要注意/ソートのいずれかを変更した直後に呼び出し、
+/// 次回起動時も同じ絞り込み条件を復元できるようにする
+/// (dashboard_screen.dartの各ChoiceChip/PopupMenuButtonのonSelectedから呼ぶ)。
+Future<void> saveDashboardFilterPrefs(WidgetRef ref) async {
+  final json = {
+    'platformFilter': ref.read(dashboardPlatformFilterProvider)?.name,
+    'tagFilter': ref.read(dashboardTagFilterProvider),
+    'attentionOnly': ref.read(dashboardAttentionOnlyProvider),
+    'sortOption': ref.read(dashboardSortOptionProvider).name,
+  };
+  try {
+    await ref.read(secureStorageServiceProvider).writeValue(
+          key: dashboardFilterPrefsStorageKey,
+          value: jsonEncode(json),
+        );
+  } catch (_) {
+    // ベストエフォート。保存に失敗してもフィルター機能自体は動作を継続する。
+  }
+}

@@ -27,6 +27,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonSelect => 'Select';
 
   @override
+  String get commonClose => 'Close';
+
+  @override
   String get dashboardEmptyMessage => 'No apps registered yet';
 
   @override
@@ -83,6 +86,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dashboardBulkDeleteConfirmMessage =>
       'Deleting will also remove their saved API keys and checklist progress. This cannot be undone.';
+
+  @override
+  String get dashboardBulkTagEditTooltip => 'Edit tags';
+
+  @override
+  String dashboardBulkTagEditTitle(int count) {
+    return 'Edit tags for $count apps';
+  }
 
   @override
   String get appRegistrationTitle => 'Register App';
@@ -489,6 +500,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAppsManagementLabel => 'Manage Registered Apps';
+
+  @override
+  String get settingsExportRosterTooltip => 'Export app list as CSV';
+
+  @override
+  String get settingsExportRosterFailed => 'Failed to export';
 
   @override
   String settingsAppsCount(int count) {

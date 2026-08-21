@@ -206,6 +206,44 @@ class ExportService {
     return const ListToCsvConverter().convert(rows);
   }
 
+  /// 登録アプリ一覧そのもの（審査履歴等ではなく台帳データ）のCSV生成ロジック本体
+  /// （ファイルI/Oを含まないため単体テスト可能）。大量アプリ管理の一環で、
+  /// アプリ名・プラットフォーム・バンドルID/パッケージ名・タグを一覧化したい
+  /// という要望に応える(buildCsv/buildCsvForAllは個別アプリの審査データが対象で、
+  /// 台帳としては使えないため別メソッドとして分離している)。
+  String buildAppRosterCsv(List<ConnectedApp> apps) {
+    final rows = <List<dynamic>>[
+      ['リリカン 登録アプリ一覧（${apps.length}件）'],
+      [],
+      ['表示名', 'プラットフォーム', 'バンドルID/パッケージ名', 'タグ'],
+      for (final app in apps)
+        [
+          app.displayName,
+          app.platform.label,
+          app.bundleIdOrPackageName,
+          app.tags.join(', '),
+        ],
+    ];
+    return const ListToCsvConverter().convert(rows);
+  }
+
+  /// buildAppRosterCsv()の結果を端末内に書き出し、生成したファイルのパスを
+  /// 返す(失敗時はnull)。generate()/generateAll()と異なりExportJobは介さない
+  /// ―― 単発のCSVでdateRange/フォーマット選択/期限付きURLといった契約が
+  /// 不要なため、戻り値をファイルパスの文字列だけに単純化している。
+  Future<String?> exportAppRoster(List<ConnectedApp> apps) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final fileName =
+          'ririkan_apps_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsString(buildAppRosterCsv(apps));
+      return file.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 「審査履歴/リジェクト理由/ビルド失敗ログ」の3セクション分のWidgetを組み立てる
   /// (アプリ名の見出しは含まない)。単一アプリ用のbuildPdf・全アプリ集約用の
   /// buildPdfForAllの両方から共通で使う。

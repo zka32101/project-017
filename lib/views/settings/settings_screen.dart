@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/gen/app_localizations.dart';
 import '../../models/connected_app.dart';
@@ -9,7 +10,29 @@ import '../../services/notification_service.dart';
 import '../../services/revenue_cat_oauth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/connected_apps_notifier.dart';
+import '../../viewmodels/export_provider.dart';
 import '../../viewmodels/service_providers.dart';
+
+/// 登録アプリ一覧（表示名・プラットフォーム・バンドルID/パッケージ名・タグ）を
+/// CSVで書き出し、共有シートを開く（大量アプリ管理: 台帳としてのエクスポート）。
+/// generate()/generateAll()による審査履歴等のエクスポートとは別物のため、
+/// ExportScreenではなくこの設定画面から直接呼び出す軽量な導線にしている。
+Future<void> _exportAppRoster(
+  BuildContext context,
+  WidgetRef ref,
+  List<ConnectedApp> apps,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final path = await ref.read(exportServiceProvider).exportAppRoster(apps);
+  if (!context.mounted) return;
+  if (path == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.settingsExportRosterFailed)),
+    );
+    return;
+  }
+  await Share.shareXFiles([XFile(path)]);
+}
 
 /// 保存済みAPIキーの一部だけを見せる表示用マスク処理。
 /// 全文表示は流出リスクがあるため行わず、かつ末尾4文字だけ見せることで
@@ -54,6 +77,13 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             title: Text(l10n.settingsAppsManagementLabel),
             subtitle: Text(l10n.settingsAppsCount(apps.length)),
+            trailing: apps.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.ios_share_outlined),
+                    tooltip: l10n.settingsExportRosterTooltip,
+                    onPressed: () => _exportAppRoster(context, ref, apps),
+                  ),
           ),
           for (final app in apps) _AppSettingsTile(app: app),
           const Divider(),

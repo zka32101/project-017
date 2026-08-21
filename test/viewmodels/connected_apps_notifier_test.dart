@@ -379,6 +379,86 @@ void main() {
     });
   });
 
+  group('ConnectedAppsNotifier.addTagToApps/removeTagFromApps（タグの一括編集）', () {
+    test('addTagToApps: 指定した複数アプリにまとめて同じタグが追加され、対象外は影響を受けない',
+        () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      final a = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'a',
+        displayName: 'A',
+        apiKey: 'k',
+      );
+      final b = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'b',
+        displayName: 'B',
+        apiKey: 'k',
+      );
+      final c = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'c',
+        displayName: 'C',
+        apiKey: 'k',
+      );
+
+      await notifier.addTagToApps({a.id, b.id}, '自社');
+
+      final state = container.read(connectedAppsProvider);
+      expect(state.firstWhere((app) => app.id == a.id).tags, ['自社']);
+      expect(state.firstWhere((app) => app.id == b.id).tags, ['自社']);
+      expect(state.firstWhere((app) => app.id == c.id).tags, isEmpty);
+    });
+
+    test('addTagToApps: 既に持っているアプリには重複追加しない', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      final a = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'a',
+        displayName: 'A',
+        apiKey: 'k',
+      );
+      await notifier.setTags(a.id, ['自社']);
+
+      await notifier.addTagToApps({a.id}, '自社');
+
+      expect(
+        container.read(connectedAppsProvider).single.tags,
+        ['自社'],
+      );
+    });
+
+    test('removeTagFromApps: 指定した複数アプリからまとめて同じタグが取り除かれる', () async {
+      final notifier = container.read(connectedAppsProvider.notifier);
+      final a = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'a',
+        displayName: 'A',
+        apiKey: 'k',
+      );
+      final b = await notifier.registerApp(
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'b',
+        displayName: 'B',
+        apiKey: 'k',
+      );
+      await notifier.setTags(a.id, ['自社', '優先度高']);
+      await notifier.setTags(b.id, ['自社']);
+
+      await notifier.removeTagFromApps({a.id, b.id}, '自社');
+
+      final state = container.read(connectedAppsProvider);
+      expect(state.firstWhere((app) => app.id == a.id).tags, ['優先度高']);
+      expect(state.firstWhere((app) => app.id == b.id).tags, isEmpty);
+    });
+  });
+
   group('ConnectedAppsNotifier.initializeDemoAppsIfNeeded', () {
     test('同時に複数回呼んでもデモアプリは1組しか登録されない（二重登録レースの防止）', () async {
       final notifier = container.read(connectedAppsProvider.notifier);

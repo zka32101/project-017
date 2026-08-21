@@ -35,6 +35,8 @@ class DashboardScreen extends ConsumerWidget {
     // AsyncValueは使わずbareでwatchするだけなので、失敗してもこの画面自体は
     // クラッシュしない（appsが空のままなら _EmptyDashboard が表示される）。
     ref.watch(appBootstrapProvider);
+    // 前回終了時のフィルター/ソート条件を復元する(初回のみ、同じくbareにwatch)。
+    ref.watch(dashboardFilterPrefsBootstrapProvider);
 
     void exitSelectionMode() {
       ref.read(dashboardSelectionModeProvider.notifier).state = false;
@@ -64,6 +66,14 @@ class DashboardScreen extends ConsumerWidget {
       exitSelectionMode();
     }
 
+    Future<void> openBulkTagEdit() async {
+      await showDialog<void>(
+        context: context,
+        builder: (context) =>
+            _BulkTagEditDialog(l10n: l10n, appIds: selectedIds),
+      );
+    }
+
     return Scaffold(
       appBar: selectionMode
           ? AppBar(
@@ -73,6 +83,11 @@ class DashboardScreen extends ConsumerWidget {
               ),
               title: Text(l10n.dashboardSelectedCount(selectedIds.length)),
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.label_outline),
+                  tooltip: l10n.dashboardBulkTagEditTooltip,
+                  onPressed: selectedIds.isEmpty ? null : openBulkTagEdit,
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   tooltip: l10n.dashboardBulkDeleteTooltip,
@@ -95,9 +110,10 @@ class DashboardScreen extends ConsumerWidget {
                   icon: const Icon(Icons.sort),
                   tooltip: l10n.dashboardSortLabel,
                   initialValue: sortOption,
-                  onSelected: (value) => ref
-                      .read(dashboardSortOptionProvider.notifier)
-                      .state = value,
+                  onSelected: (value) {
+                    ref.read(dashboardSortOptionProvider.notifier).state = value;
+                    saveDashboardFilterPrefs(ref);
+                  },
                   itemBuilder: (context) => [
                     CheckedPopupMenuItem(
                       value: DashboardSortOption.manual,
@@ -238,23 +254,28 @@ class _SearchAndFilterBar extends ConsumerWidget {
               ChoiceChip(
                 label: Text(l10n.dashboardFilterAll),
                 selected: platformFilter == null,
-                onSelected: (_) => ref
-                    .read(dashboardPlatformFilterProvider.notifier)
-                    .state = null,
+                onSelected: (_) {
+                  ref.read(dashboardPlatformFilterProvider.notifier).state = null;
+                  saveDashboardFilterPrefs(ref);
+                },
               ),
               ChoiceChip(
                 label: const Text('iOS'),
                 selected: platformFilter == PlatformType.ios,
-                onSelected: (_) => ref
-                    .read(dashboardPlatformFilterProvider.notifier)
-                    .state = PlatformType.ios,
+                onSelected: (_) {
+                  ref.read(dashboardPlatformFilterProvider.notifier).state =
+                      PlatformType.ios;
+                  saveDashboardFilterPrefs(ref);
+                },
               ),
               ChoiceChip(
                 label: const Text('Android'),
                 selected: platformFilter == PlatformType.android,
-                onSelected: (_) => ref
-                    .read(dashboardPlatformFilterProvider.notifier)
-                    .state = PlatformType.android,
+                onSelected: (_) {
+                  ref.read(dashboardPlatformFilterProvider.notifier).state =
+                      PlatformType.android;
+                  saveDashboardFilterPrefs(ref);
+                },
               ),
               ChoiceChip(
                 label: Text(l10n.dashboardAttentionFilter(attentionCount)),
@@ -262,9 +283,10 @@ class _SearchAndFilterBar extends ConsumerWidget {
                     ? null
                     : const Icon(Icons.error_outline, size: 18, color: AppTheme.danger),
                 selected: attentionOnly,
-                onSelected: (value) => ref
-                    .read(dashboardAttentionOnlyProvider.notifier)
-                    .state = value,
+                onSelected: (value) {
+                  ref.read(dashboardAttentionOnlyProvider.notifier).state = value;
+                  saveDashboardFilterPrefs(ref);
+                },
               ),
             ],
           ),
@@ -279,9 +301,11 @@ class _SearchAndFilterBar extends ConsumerWidget {
                   ChoiceChip(
                     label: Text(tag),
                     selected: tagFilter == tag,
-                    onSelected: (selected) => ref
-                        .read(dashboardTagFilterProvider.notifier)
-                        .state = selected ? tag : null,
+                    onSelected: (selected) {
+                      ref.read(dashboardTagFilterProvider.notifier).state =
+                          selected ? tag : null;
+                      saveDashboardFilterPrefs(ref);
+                    },
                   ),
               ],
             ),
@@ -410,6 +434,94 @@ class _AppStatusCard extends ConsumerWidget {
                 ),
         ),
       ),
+    );
+  }
+}
+
+/// 選択中の複数アプリへまとめてタグを追加・削除するダイアログ
+/// (ダッシュボードの一括選択モードから開く、大量アプリ管理用のタグ一括編集機能)。
+/// 各操作はすぐにConnectedAppsNotifier側へ反映される(送信ボタンで確定する
+/// 設計ではない)ため、閉じるボタンに「キャンセル」の意味は無い。
+class _BulkTagEditDialog extends ConsumerStatefulWidget {
+  final AppLocalizations l10n;
+  final Set<String> appIds;
+  const _BulkTagEditDialog({required this.l10n, required this.appIds});
+
+  @override
+  ConsumerState<_BulkTagEditDialog> createState() => _BulkTagEditDialogState();
+}
+
+class _BulkTagEditDialogState extends ConsumerState<_BulkTagEditDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _addTag(String value) {
+    final tag = value.trim();
+    _controller.clear();
+    if (tag.isEmpty) return;
+    ref.read(connectedAppsProvider.notifier).addTagToApps(widget.appIds, tag);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 選択中のアプリのうち、いずれか1つでも持っているタグを削除候補として
+    // 一覧表示する(全員が同じタグを持っているとは限らないため、「持っている
+    // アプリからだけ取り除く」動作になる。removeTagFromApps参照)。
+    final apps = ref.watch(connectedAppsProvider);
+    final tagsInSelection = apps
+        .where((a) => widget.appIds.contains(a.id))
+        .expand((a) => a.tags)
+        .toSet()
+        .toList()
+      ..sort();
+
+    return AlertDialog(
+      title: Text(widget.l10n.dashboardBulkTagEditTitle(widget.appIds.length)),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (tagsInSelection.isNotEmpty) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final tag in tagsInSelection)
+                    Chip(
+                      label: Text(tag),
+                      onDeleted: () => ref
+                          .read(connectedAppsProvider.notifier)
+                          .removeTagFromApps(widget.appIds, tag),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              key: const Key('bulkTagsInput'),
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: widget.l10n.appDetailManagementTagsHint,
+                isDense: true,
+              ),
+              onSubmitted: _addTag,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(widget.l10n.commonClose),
+        ),
+      ],
     );
   }
 }

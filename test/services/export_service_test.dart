@@ -127,6 +127,51 @@ void main() {
     });
   });
 
+  group('ExportService.buildAppRosterCsv（登録アプリ一覧のCSVエクスポート）', () {
+    test('各アプリの表示名・プラットフォーム・バンドルID/パッケージ名・タグが出力される', () {
+      const app1 = ConnectedApp(
+        id: 'app1',
+        userId: 'u1',
+        platform: PlatformType.ios,
+        bundleIdOrPackageName: 'works.petit.app1',
+        displayName: 'テストアプリ',
+        sortOrder: 0,
+        tags: ['自社', '優先度高'],
+      );
+      const app2 = ConnectedApp(
+        id: 'app2',
+        userId: 'u1',
+        platform: PlatformType.android,
+        bundleIdOrPackageName: 'works.petit.app2',
+        displayName: 'テストアプリ2',
+        sortOrder: 1,
+      );
+
+      const service = ExportService();
+      final csv = service.buildAppRosterCsv([app1, app2]);
+
+      expect(csv, contains('登録アプリ一覧'));
+      expect(csv, contains('テストアプリ'));
+      expect(csv, contains('works.petit.app1'));
+      expect(csv, contains('自社'));
+      expect(csv, contains('優先度高'));
+      expect(csv, contains('テストアプリ2'));
+      expect(csv, contains('works.petit.app2'));
+    });
+
+    test('タグが無いアプリでも例外を投げない', () {
+      const service = ExportService();
+      final csv = service.buildAppRosterCsv([app]);
+      expect(csv, contains('テストアプリ'));
+    });
+
+    test('空リストでも例外を投げない', () {
+      const service = ExportService();
+      final csv = service.buildAppRosterCsv([]);
+      expect(csv, contains('登録アプリ一覧'));
+    });
+  });
+
   group('ExportService.sanitizeForFileName', () {
     test('パス区切り文字を含む表示名は安全な文字に置換される', () {
       // app.displayNameはアプリ登録画面の自由入力欄のため、'/'を含む名前が

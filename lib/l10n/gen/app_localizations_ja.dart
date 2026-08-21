@@ -27,6 +27,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonSelect => '選択';
 
   @override
+  String get commonClose => '閉じる';
+
+  @override
   String get dashboardEmptyMessage => 'まだ登録アプリがありません';
 
   @override
@@ -83,6 +86,14 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get dashboardBulkDeleteConfirmMessage =>
       '削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。';
+
+  @override
+  String get dashboardBulkTagEditTooltip => 'タグを編集';
+
+  @override
+  String dashboardBulkTagEditTitle(int count) {
+    return '$count件のアプリのタグを編集';
+  }
 
   @override
   String get appRegistrationTitle => 'アプリ登録';
@@ -472,6 +483,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsAppsManagementLabel => '登録アプリ管理';
+
+  @override
+  String get settingsExportRosterTooltip => '登録アプリ一覧をCSVで書き出す';
+
+  @override
+  String get settingsExportRosterFailed => '書き出しに失敗しました';
 
   @override
   String settingsAppsCount(int count) {

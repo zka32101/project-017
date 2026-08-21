@@ -125,6 +125,35 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
     await _persist();
   }
 
+  /// 複数アプリへまとめて同じタグを追加する（ダッシュボードのタグ一括編集用）。
+  /// 既に持っているアプリはそのまま(重複追加しない)。setTags()をN回呼ぶのでは
+  /// なく、removeApps()と同じ理由で永続化(_persist)は最後に1回だけ行う。
+  Future<void> addTagToApps(Iterable<String> ids, String tag) async {
+    final idSet = ids.toSet();
+    state = [
+      for (final app in state)
+        if (idSet.contains(app.id) && !app.tags.contains(tag))
+          app.copyWith(tags: [...app.tags, tag])
+        else
+          app,
+    ];
+    await _persist();
+  }
+
+  /// 複数アプリからまとめて同じタグを取り除く（ダッシュボードのタグ一括編集用）。
+  /// 対象のタグを持っていないアプリはそのまま。
+  Future<void> removeTagFromApps(Iterable<String> ids, String tag) async {
+    final idSet = ids.toSet();
+    state = [
+      for (final app in state)
+        if (idSet.contains(app.id) && app.tags.contains(tag))
+          app.copyWith(tags: app.tags.where((t) => t != tag).toList())
+        else
+          app,
+    ];
+    await _persist();
+  }
+
   /// 永続化データからの復元用。APIキー本体は前回セッションで既にSecure
   /// Storageへ保存済みのため、ここではメタデータ一覧をstateへ反映するだけでよい
   /// （Secure Storageへの再書き込みは行わない）。

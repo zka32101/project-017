@@ -9,6 +9,7 @@
   "commonCancel": "キャンセル",
   "commonDelete": "削除",
   "commonSelect": "選択",
+  "commonClose": "閉じる",
 
   "dashboardEmptyMessage": "まだ登録アプリがありません",
   "dashboardAddApp": "アプリを追加",
@@ -36,6 +37,11 @@
     "placeholders": {"count": {"type": "int"}}
   },
   "dashboardBulkDeleteConfirmMessage": "削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。",
+  "dashboardBulkTagEditTooltip": "タグを編集",
+  "dashboardBulkTagEditTitle": "{count}件のアプリのタグを編集",
+  "@dashboardBulkTagEditTitle": {
+    "placeholders": {"count": {"type": "int"}}
+  },
 
   "appRegistrationTitle": "アプリ登録",
   "appRegistrationApiKeyRequired": "APIキーを入力してください",
@@ -217,6 +223,8 @@
   "settingsPlanPro": "広告なし",
   "settingsPlanFree": "広告あり",
   "settingsAppsManagementLabel": "登録アプリ管理",
+  "settingsExportRosterTooltip": "登録アプリ一覧をCSVで書き出す",
+  "settingsExportRosterFailed": "書き出しに失敗しました",
   "settingsAppsCount": "{count}件登録中",
   "@settingsAppsCount": {
     "placeholders": {"count": {"type": "int"}}

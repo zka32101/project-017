@@ -570,4 +570,136 @@ void main() {
       expect(notification.statusChangeNotificationCount, 0);
     });
   });
+
+  group('フィルター条件の保存（大量アプリ管理）', () {
+    testWidgets('プラットフォームフィルターを選ぶと保存され、次回起動時(新しいcontainer)でも復元される',
+        (tester) async {
+      final secureStorage = FakeSecureStorageService();
+      final localStore = FakeLocalStoreService();
+
+      final container1 = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(secureStorage),
+          localStoreServiceProvider.overrideWithValue(localStore),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        ],
+      );
+      addTearDown(container1.dispose);
+      await container1.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.zebra',
+            displayName: 'Zebra iOS',
+            apiKey: 'k',
+          );
+      await container1.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.android,
+            bundleIdOrPackageName: 'works.petit.apple',
+            displayName: 'Apple Android',
+            apiKey: 'k',
+          );
+
+      final router1 = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container1,
+          child: wrapWithLocalizedRouter(router1),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'iOS'));
+      await tester.pumpAndSettle();
+      expect(find.text('Zebra iOS'), findsOneWidget);
+      expect(find.text('Apple Android'), findsNothing);
+
+      // 「次回起動」を模して、同じsecureStorage/localStoreを共有する
+      // 別のcontainer(=別セッション)でダッシュボードを開き直す。
+      final container2 = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(secureStorage),
+          localStoreServiceProvider.overrideWithValue(localStore),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        ],
+      );
+      addTearDown(container2.dispose);
+
+      final router2 = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container2,
+          child: wrapWithLocalizedRouter(router2),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // フィルターUIを再操作しなくても、iOSフィルターが復元されている。
+      expect(find.text('Zebra iOS'), findsOneWidget);
+      expect(find.text('Apple Android'), findsNothing);
+    });
+  });
+
+  group('タグの一括編集（大量アプリ管理）', () {
+    testWidgets('選択モードでタグを追加すると全選択アプリに反映され、タグフィルターにも現れる',
+        (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.a',
+            displayName: 'AppA',
+            apiKey: 'k',
+          );
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.android,
+            bundleIdOrPackageName: 'works.petit.b',
+            displayName: 'AppB',
+            apiKey: 'k',
+          );
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 選択モードに入り、両方のアプリをチェックする。
+      await tester.tap(find.byIcon(Icons.checklist_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'AppA'));
+      await tester.tap(find.widgetWithText(ListTile, 'AppB'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.label_outline));
+      await tester.pumpAndSettle();
+      expect(find.text('2件のアプリのタグを編集'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('bulkTagsInput')), '自社');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      // ダイアログ内に削除候補チップとして表示される。
+      expect(find.widgetWithText(Chip, '自社'), findsOneWidget);
+
+      await tester.tap(find.text('閉じる'));
+      await tester.pumpAndSettle();
+
+      // 両方のアプリにタグが付き、タグフィルターのチップが出現する。
+      final apps = container.read(connectedAppsProvider);
+      expect(apps.every((a) => a.tags.contains('自社')), isTrue);
+      expect(find.widgetWithText(ChoiceChip, '自社'), findsOneWidget);
+    });
+  });
 }

@@ -134,6 +134,12 @@ abstract class AppLocalizations {
   /// **'選択'**
   String get commonSelect;
 
+  /// No description provided for @commonClose.
+  ///
+  /// In ja, this message translates to:
+  /// **'閉じる'**
+  String get commonClose;
+
   /// No description provided for @dashboardEmptyMessage.
   ///
   /// In ja, this message translates to:
@@ -235,6 +241,18 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'削除すると、保存済みのAPIキーとチェックリストの進捗も削除されます。この操作は取り消せません。'**
   String get dashboardBulkDeleteConfirmMessage;
+
+  /// No description provided for @dashboardBulkTagEditTooltip.
+  ///
+  /// In ja, this message translates to:
+  /// **'タグを編集'**
+  String get dashboardBulkTagEditTooltip;
+
+  /// No description provided for @dashboardBulkTagEditTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のアプリのタグを編集'**
+  String dashboardBulkTagEditTitle(int count);
 
   /// No description provided for @appRegistrationTitle.
   ///
@@ -937,6 +955,18 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'登録アプリ管理'**
   String get settingsAppsManagementLabel;
+
+  /// No description provided for @settingsExportRosterTooltip.
+  ///
+  /// In ja, this message translates to:
+  /// **'登録アプリ一覧をCSVで書き出す'**
+  String get settingsExportRosterTooltip;
+
+  /// No description provided for @settingsExportRosterFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'書き出しに失敗しました'**
+  String get settingsExportRosterFailed;
 
   /// No description provided for @settingsAppsCount.
   ///

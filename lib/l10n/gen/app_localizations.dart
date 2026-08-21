@@ -140,6 +140,12 @@ abstract class AppLocalizations {
   /// **'閉じる'**
   String get commonClose;
 
+  /// No description provided for @commonSave.
+  ///
+  /// In ja, this message translates to:
+  /// **'保存'**
+  String get commonSave;
+
   /// No description provided for @dashboardEmptyMessage.
   ///
   /// In ja, this message translates to:
@@ -506,11 +512,23 @@ abstract class AppLocalizations {
   /// **'Build {number}'**
   String appDetailBuildNumber(String number);
 
+  /// No description provided for @appDetailMockDataBanner.
+  ///
+  /// In ja, this message translates to:
+  /// **'サンプルデータを表示しています（Apple/Googleの公式APIに対応するエンドポイントが無いため）'**
+  String get appDetailMockDataBanner;
+
   /// No description provided for @appDetailTabManagement.
   ///
   /// In ja, this message translates to:
   /// **'管理'**
   String get appDetailTabManagement;
+
+  /// No description provided for @appDetailManagementDisplayNameLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'表示名'**
+  String get appDetailManagementDisplayNameLabel;
 
   /// No description provided for @appDetailManagementStatusSectionTitle.
   ///
@@ -860,6 +878,36 @@ abstract class AppLocalizations {
   /// **'あとで'**
   String get notificationPromptLater;
 
+  /// No description provided for @notificationDailyReminderBody.
+  ///
+  /// In ja, this message translates to:
+  /// **'本日の審査状況をチェックしましょう'**
+  String get notificationDailyReminderBody;
+
+  /// No description provided for @notificationDailyChannelName.
+  ///
+  /// In ja, this message translates to:
+  /// **'毎朝の状態サマリー'**
+  String get notificationDailyChannelName;
+
+  /// No description provided for @notificationDailyChannelDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'登録アプリの審査状況を毎朝リマインドします'**
+  String get notificationDailyChannelDescription;
+
+  /// No description provided for @notificationStatusChangeChannelName.
+  ///
+  /// In ja, this message translates to:
+  /// **'審査状態の変化通知'**
+  String get notificationStatusChangeChannelName;
+
+  /// No description provided for @notificationStatusChangeChannelDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'登録アプリの審査状態が変化した時に通知します'**
+  String get notificationStatusChangeChannelDescription;
+
   /// No description provided for @paywallTitle.
   ///
   /// In ja, this message translates to:
@@ -1003,6 +1051,24 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'APIキー: {masked}'**
   String settingsApiKeyMasked(String masked);
+
+  /// No description provided for @settingsRotateApiKeyTooltip.
+  ///
+  /// In ja, this message translates to:
+  /// **'APIキーを更新'**
+  String get settingsRotateApiKeyTooltip;
+
+  /// No description provided for @settingsRotateApiKeyTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'APIキーを再登録'**
+  String get settingsRotateApiKeyTitle;
+
+  /// No description provided for @settingsRotateApiKeySuccess.
+  ///
+  /// In ja, this message translates to:
+  /// **'APIキーを更新しました'**
+  String get settingsRotateApiKeySuccess;
 
   /// No description provided for @settingsRemoveConfirmTitle.
   ///

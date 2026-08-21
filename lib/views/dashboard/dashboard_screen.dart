@@ -62,8 +62,20 @@ class DashboardScreen extends ConsumerWidget {
         ),
       );
       if (confirmed != true) return;
-      await ref.read(connectedAppsProvider.notifier).removeApps(selectedIds);
-      exitSelectionMode();
+      try {
+        await ref.read(connectedAppsProvider.notifier).removeApps(selectedIds);
+        exitSelectionMode();
+      } catch (e) {
+        // Secure Storageの削除失敗等でremoveApps自体が例外を投げると
+        // 何も削除されない(connected_apps_notifier.dart参照)。以前はここで
+        // 何もフィードバックせず、選択モードのまま無反応に見えていたため、
+        // settings_screen.dartの単体削除と同じくエラー表示する
+        // (選択状態は保持したまま、そのまま再試行できるようにする)。
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.settingsRemoveFailed('$e'))),
+        );
+      }
     }
 
     Future<void> openBulkTagEdit() async {

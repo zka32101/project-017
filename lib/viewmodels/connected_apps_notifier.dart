@@ -55,6 +55,11 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
   /// 同じAPIキーのコピーが保存される（ConnectedApp 1件につき apiKeyRef 1件、という
   /// 既存のデータモデルをそのまま踏襲する）。
   ///
+  /// 同じplatform+bundleIdOrPackageNameで既に登録済みのアプリは重複登録せず
+  /// スキップする(同じAPIキーで「まとめて取得」を再実行するたびに毎回
+  /// フルセット重複登録され、大量アプリ管理の一括削除で手動整理する羽目に
+  /// なっていた不具合の修正)。
+  ///
   /// 途中の1件が失敗しても、既に登録済みの分はロールバックしない
   /// （「N件中M件登録できました」を後続の呼び出し側が判断できるよう、
   /// 例外はそのまま呼び出し元へ伝播させる）。
@@ -64,8 +69,13 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
     required String apiKey,
     required List<DiscoverableApp> discovered,
   }) async {
+    final existingBundleIds = state
+        .where((a) => a.platform == platform)
+        .map((a) => a.bundleIdOrPackageName)
+        .toSet();
     final registered = <ConnectedApp>[];
     for (final d in discovered) {
+      if (existingBundleIds.contains(d.bundleIdOrPackageName)) continue;
       final app = await registerApp(
         userId: userId,
         platform: platform,
@@ -76,6 +86,28 @@ class ConnectedAppsNotifier extends Notifier<List<ConnectedApp>> {
       registered.add(app);
     }
     return registered;
+  }
+
+  /// APIキーの再登録(ローテーション)。App Store Connect/Play Consoleのキーが
+  /// 失効・再発行された場合に、アプリを削除して登録し直さずにSecure Storageの
+  /// 中身だけ差し替えられるようにする(削除→再登録だとチェックリストの進捗・
+  /// 管理メモ・タグ・並び順が全て失われてしまうため)。registerApp()と同様、
+  /// apiKeyRefは常にidと同じ値のため、ConnectedApp自体(state)の更新は不要。
+  Future<void> updateApiKey(String id, String apiKey) async {
+    await ref.read(secureStorageServiceProvider).saveApiKey(
+          connectedAppId: id,
+          apiKey: apiKey,
+        );
+  }
+
+  /// アプリの表示名を変更する(登録時に自動生成された名前が実際のストア表示名と
+  /// 異なる場合等の訂正用)。
+  Future<void> renameApp(String id, String displayName) async {
+    state = [
+      for (final app in state)
+        if (app.id == id) app.copyWith(displayName: displayName) else app,
+    ];
+    await _persist();
   }
 
   /// oldIndex/newIndex は ReorderableListView の onReorderItem が既に

@@ -10,6 +10,7 @@ import 'package:ririkan/models/connected_app.dart';
 import 'package:ririkan/models/platform_type.dart';
 import 'package:ririkan/router/app_router.dart';
 import 'package:ririkan/services/export_service.dart';
+import 'package:ririkan/services/notification_service.dart';
 import 'package:ririkan/services/revenue_cat_oauth_service.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
 import 'package:ririkan/viewmodels/export_provider.dart';
@@ -326,5 +327,110 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('広告を消しませんか？'), findsOneWidget);
+  });
+
+  group('毎朝の通知トグル（OS側の許可状態との同期）', () {
+    testWidgets('保存値がONでもOS側で許可が無ければ、トグルはOFF表示に補正され保存値も書き戻される',
+        (tester) async {
+      final storage = FakeSecureStorageService();
+      await storage.writeValue(
+        key: notificationsEnabledStorageKey,
+        value: 'true',
+      );
+      final osRevokedContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(storage),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          notificationServiceProvider
+              .overrideWithValue(FakeNotificationService(permissionGranted: false)),
+        ],
+      );
+      addTearDown(osRevokedContainer.dispose);
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: osRevokedContainer,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      router.go('/settings');
+      await tester.pumpAndSettle();
+
+      final toggle = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
+      expect(toggle.value, isFalse);
+      expect(
+        await storage.readValue(notificationsEnabledStorageKey),
+        'false',
+      );
+    });
+
+    testWidgets('保存値がONでOS側も許可されていれば、トグルはON表示のまま', (tester) async {
+      final storage = FakeSecureStorageService();
+      await storage.writeValue(
+        key: notificationsEnabledStorageKey,
+        value: 'true',
+      );
+      final osGrantedContainer = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(storage),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          notificationServiceProvider
+              .overrideWithValue(FakeNotificationService(permissionGranted: true)),
+        ],
+      );
+      addTearDown(osGrantedContainer.dispose);
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: osGrantedContainer,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      router.go('/settings');
+      await tester.pumpAndSettle();
+
+      final toggle = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
+      expect(toggle.value, isTrue);
+    });
+  });
+
+  group('APIキーの再登録（ローテーション）', () {
+    testWidgets('新しいキーを入力して保存すると、マスク表示が更新される', (tester) async {
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.app1',
+            displayName: 'テストアプリ',
+            apiKey: 'old-key-aaaa',
+          );
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      router.go('/settings');
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('aaaa'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.key_outlined));
+      await tester.pumpAndSettle();
+      expect(find.text('APIキーを再登録'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'new-key-bbbb');
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('APIキーを更新しました'), findsOneWidget);
+      expect(find.textContaining('bbbb'), findsOneWidget);
+      expect(find.textContaining('aaaa'), findsNothing);
+    });
   });
 }

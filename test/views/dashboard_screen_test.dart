@@ -12,6 +12,7 @@ import 'package:ririkan/models/review_status_type.dart';
 import 'package:ririkan/router/app_router.dart';
 import 'package:ririkan/services/notification_service.dart';
 import 'package:ririkan/services/review_status_service.dart';
+import 'package:ririkan/services/secure_storage_service.dart';
 import 'package:ririkan/services/service_result.dart';
 import 'package:ririkan/viewmodels/app_review_management_notifier.dart';
 import 'package:ririkan/viewmodels/connected_apps_notifier.dart';
@@ -702,4 +703,123 @@ void main() {
       expect(find.widgetWithText(ChoiceChip, '自社'), findsOneWidget);
     });
   });
+
+  group('フィルター条件の不整合修正（大量アプリ管理）', () {
+    testWidgets('選択中のタグが後から全アプリから削除されても、絞り込み結果が0件のまま詰まない',
+        (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        ],
+      );
+      addTearDown(container.dispose);
+      final a = await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.a',
+            displayName: 'AppA',
+            apiKey: 'k',
+          );
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.android,
+            bundleIdOrPackageName: 'works.petit.b',
+            displayName: 'AppB',
+            apiKey: 'k',
+          );
+      await container.read(connectedAppsProvider.notifier).setTags(a.id, ['期間限定']);
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '期間限定'));
+      await tester.pumpAndSettle();
+      expect(find.text('AppA'), findsOneWidget);
+      expect(find.text('AppB'), findsNothing);
+
+      // タグを全アプリから削除する(フィルターの選択状態はdashboardTagFilterProvider
+      // に残ったまま、UIからは何も操作していない点がポイント)。
+      await container.read(connectedAppsProvider.notifier).setTags(a.id, []);
+      await tester.pumpAndSettle();
+
+      // 「絞り込み無し」として扱われ、両方表示される(0件のまま詰まらない)。
+      expect(find.text('AppA'), findsOneWidget);
+      expect(find.text('AppB'), findsOneWidget);
+      expect(find.text('条件に一致するアプリがありません'), findsNothing);
+    });
+
+    testWidgets('一括削除がSecure Storageの失敗で例外を投げても、エラー表示され選択状態は保持される',
+        (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_DeleteFailsSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.a',
+            displayName: 'AppA',
+            apiKey: 'k',
+          );
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.checklist_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'AppA'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, '削除'));
+      await tester.pumpAndSettle();
+
+      // 何も削除されず、エラーメッセージが表示され、選択モードのまま
+      // (以前は無反応のまま何も起きなかった)。
+      expect(find.text('AppA'), findsOneWidget);
+      expect(find.textContaining('削除に失敗しました'), findsOneWidget);
+      expect(find.text('1件選択中'), findsOneWidget);
+    });
+  });
+}
+
+/// APIキーの削除だけが失敗するフェイク(一括削除の失敗ハンドリング検証用、
+/// test/viewmodels/connected_apps_notifier_test.dartの同名フェイクと同じ形)。
+class _DeleteFailsSecureStorageService extends SecureStorageService {
+  final Map<String, String> _memory = {};
+
+  @override
+  Future<void> saveApiKey({
+    required String connectedAppId,
+    required String apiKey,
+  }) async {
+    _memory[SecureStorageService.refKeyFor(connectedAppId)] = apiKey;
+  }
+
+  @override
+  Future<String?> readApiKey(String connectedAppId) async =>
+      _memory[SecureStorageService.refKeyFor(connectedAppId)];
+
+  @override
+  Future<void> deleteApiKey(String connectedAppId) async =>
+      throw Exception('削除に失敗しました（テスト用）');
 }

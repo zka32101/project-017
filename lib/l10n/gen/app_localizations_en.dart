@@ -30,6 +30,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClose => 'Close';
 
   @override
+  String get commonSave => 'Save';
+
+  @override
   String get dashboardEmptyMessage => 'No apps registered yet';
 
   @override
@@ -245,7 +248,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get appDetailMockDataBanner =>
+      'Showing sample data (no official Apple/Google API endpoint exists for this yet)';
+
+  @override
   String get appDetailTabManagement => 'Management';
+
+  @override
+  String get appDetailManagementDisplayNameLabel => 'Display Name';
 
   @override
   String get appDetailManagementStatusSectionTitle => 'Review Status';
@@ -449,6 +459,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationPromptLater => 'Later';
 
   @override
+  String get notificationDailyReminderBody => 'Check today\'s review status';
+
+  @override
+  String get notificationDailyChannelName => 'Daily Status Summary';
+
+  @override
+  String get notificationDailyChannelDescription =>
+      'Reminds you every morning to check your registered apps\' review status';
+
+  @override
+  String get notificationStatusChangeChannelName => 'Review Status Changes';
+
+  @override
+  String get notificationStatusChangeChannelDescription =>
+      'Notifies you when a registered app\'s review status changes';
+
+  @override
   String get paywallTitle => 'Remove ads?';
 
   @override
@@ -532,6 +559,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsApiKeyMasked(String masked) {
     return 'API Key: $masked';
   }
+
+  @override
+  String get settingsRotateApiKeyTooltip => 'Update API key';
+
+  @override
+  String get settingsRotateApiKeyTitle => 'Re-register API key';
+
+  @override
+  String get settingsRotateApiKeySuccess => 'API key updated';
 
   @override
   String get settingsRemoveConfirmTitle => 'Remove this app?';

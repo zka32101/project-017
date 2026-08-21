@@ -37,6 +37,11 @@ abstract class NotificationService {
   /// Androidは13未満では常にtrue相当(許可UIが無いため)。
   Future<bool> requestPermission();
 
+  /// 許可ダイアログを出さずに、現在のOS通知許可状態だけを確認する。
+  /// SettingsScreenのトグル表示をOS側の実際の状態と同期させるために使う
+  /// (requestPermission()と違い、未許可でもダイアログは出ない)。
+  Future<bool> isPermissionGranted();
+
   /// 毎日hour:minute(端末のローカルタイムゾーン)に固定文言のリマインダーを
   /// スケジュールする(既存のスケジュールは上書きされる)。
   Future<void> scheduleDailyReminder({int hour = 9, int minute = 0});
@@ -82,17 +87,12 @@ class LocalNotificationService implements NotificationService {
 
   static const _dailyReminderNotificationId = 1001;
   static const _channelId = 'ririkan_daily_summary';
-  static const _channelName = '毎朝の状態サマリー';
-  static const _channelDescription = '登録アプリの審査状況を毎朝リマインドします';
 
   // 個別の状態変化通知のID帯。1つのアプリにつき1通知IDを割り当てて
   // 上書き通知(同じアプリで連続して状態が変わった場合、前の通知を消して
   // 最新の1通だけ残す)にする。日次リマインダー(1001)と衝突しないよう
   // 十分に大きいオフセットを取る。
   static const _statusChangeChannelId = 'ririkan_status_change';
-  static const _statusChangeChannelName = '審査状態の変化通知';
-  static const _statusChangeChannelDescription =
-      '登録アプリの審査状態が変化した時に通知します';
 
   bool _timeZoneInitialized = false;
 
@@ -152,25 +152,47 @@ class LocalNotificationService implements NotificationService {
   }
 
   @override
+  Future<bool> isPermissionGranted() async {
+    if (Platform.isAndroid) {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      return await android?.areNotificationsEnabled() ?? false;
+    }
+    if (Platform.isIOS) {
+      final ios = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      final options = await ios?.checkPermissions();
+      return options?.isEnabled ?? false;
+    }
+    return false;
+  }
+
+  @override
   Future<void> scheduleDailyReminder({int hour = 9, int minute = 0}) async {
     await _ensureTimeZoneInitialized();
+    final l10n = _resolveLocalizations();
     await _plugin.zonedSchedule(
       _dailyReminderNotificationId,
-      'リリカン',
-      '本日の審査状況をチェックしましょう',
+      l10n.appTitle,
+      l10n.notificationDailyReminderBody,
       _nextInstanceOfTime(hour, minute),
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
+          l10n.notificationDailyChannelName,
+          channelDescription: l10n.notificationDailyChannelDescription,
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: const DarwinNotificationDetails(),
       ),
       // exactAllowWhileIdleはAndroid 12+でSCHEDULE_EXACT_ALARM権限が別途必要になる。
       // 「毎朝だいたいこの時刻」で十分な用途のため、権限不要なinexactを使う。
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
+      // タップした際に個別通知(showReviewStatusChangedNotification)と同様に
+      // ディープリンクさせる(ダッシュボードを開く)。以前はpayload未設定で
+      // タップしても何も起きなかった(通知タップ→遷移の導線が個別通知だけに
+      // 結線されていた不整合を修正)。
+      payload: '/dashboard',
     );
   }
 
@@ -192,13 +214,13 @@ class LocalNotificationService implements NotificationService {
         app.displayName,
         newStatus.label(l10n),
       ),
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           _statusChangeChannelId,
-          _statusChangeChannelName,
-          channelDescription: _statusChangeChannelDescription,
+          l10n.notificationStatusChangeChannelName,
+          channelDescription: l10n.notificationStatusChangeChannelDescription,
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: const DarwinNotificationDetails(),
       ),
       payload: '/app-detail/${app.id}$tabQuery',
     );

@@ -13,13 +13,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ririkan/main.dart';
+import 'package:ririkan/models/app_review_management.dart';
 import 'package:ririkan/models/connected_app.dart';
 import 'package:ririkan/models/submission_checklist_item.dart';
+import 'package:ririkan/router/app_router.dart';
 import 'package:ririkan/services/local_store_service.dart';
 import 'package:ririkan/services/secure_storage_service.dart';
 import 'package:ririkan/services/widget_sync_service.dart';
 import 'package:ririkan/viewmodels/service_providers.dart';
 import 'package:ririkan/viewmodels/widget_sync_provider.dart';
+
+import 'test_utils/fakes.dart';
 
 class _FakeSecureStorageService extends SecureStorageService {
   final Map<String, String> _memory = {};
@@ -40,10 +44,28 @@ class _FakeSecureStorageService extends SecureStorageService {
   Future<void> deleteApiKey(String connectedAppId) async {
     _memory.remove(SecureStorageService.refKeyFor(connectedAppId));
   }
+
+  // writeValue/readValue/deleteValue はSecureStorageService本体では実際の
+  // FlutterSecureStorage(プラットフォームチャネル)を直接叩くため、通知設定
+  // (審査状態の個別通知含む)の読み取りでflutter test環境でも安全に動くよう
+  // apiKey系と同じインメモリMapで上書きする(test_utils/fakes.dartと同じ理由)。
+  final Map<String, String> _valueMemory = {};
+
+  @override
+  Future<void> writeValue({required String key, required String value}) async {
+    _valueMemory[key] = value;
+  }
+
+  @override
+  Future<String?> readValue(String key) async => _valueMemory[key];
+
+  @override
+  Future<void> deleteValue(String key) async {
+    _valueMemory.remove(key);
+  }
 }
 
 class _FakeLocalStoreService extends LocalStoreService {
-  const _FakeLocalStoreService();
 
   @override
   Future<LocalState?> load() async => null;
@@ -65,6 +87,30 @@ class _FakeLocalStoreService extends LocalStoreService {
 
   @override
   Future<void> deleteChecklist(String connectedAppId) async {}
+
+  // loadManagement/saveManagement/deleteManagementも同様に実プラットフォーム
+  // チャネル(path_provider)を叩く実装のため上書きする。testWidgets環境では
+  // 未オーバーライドのままだとMissingPluginExceptionで即座に失敗するのではなく
+  // pumpAndSettle()がタイムアウトするまでハングすることが分かっている
+  // (test_utils/fakes.dartのFakeLocalStoreServiceと同じ理由)。
+  final Map<String, AppReviewManagement> _managementByAppId = {};
+
+  @override
+  Future<AppReviewManagement?> loadManagement(String connectedAppId) async =>
+      _managementByAppId[connectedAppId];
+
+  @override
+  Future<void> saveManagement(
+    String connectedAppId,
+    AppReviewManagement info,
+  ) async {
+    _managementByAppId[connectedAppId] = info;
+  }
+
+  @override
+  Future<void> deleteManagement(String connectedAppId) async {
+    _managementByAppId.remove(connectedAppId);
+  }
 }
 
 class _FakeWidgetSyncService extends WidgetSyncService {
@@ -94,10 +140,11 @@ void main() {
       ProviderScope(
         overrides: [
           secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
-          localStoreServiceProvider.overrideWithValue(const _FakeLocalStoreService()),
+          localStoreServiceProvider.overrideWithValue(_FakeLocalStoreService()),
           widgetSyncServiceProvider.overrideWithValue(const _FakeWidgetSyncService()),
+          notificationServiceProvider.overrideWithValue(FakeNotificationService()),
         ],
-        child: const RirikanApp(),
+        child: RirikanApp(router: buildAppRouter()),
       ),
     );
     await tester.pumpAndSettle();

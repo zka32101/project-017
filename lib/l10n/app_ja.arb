@@ -256,6 +256,14 @@
     "placeholders": {"error": {"type": "String"}}
   },
 
+  "notificationStatusChangedBody": "{appName}の審査状態が「{status}」に変わりました",
+  "@notificationStatusChangedBody": {
+    "placeholders": {
+      "appName": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+
   "reviewStatusWaitingReview": "審査待ち",
   "reviewStatusInReview": "審査中",
   "reviewStatusRejected": "リジェクト",

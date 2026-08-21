@@ -179,6 +179,14 @@
   "settingsRevenueCatConnectFailed": "Failed to connect: {error}",
   "settingsRevenueCatDisconnectFailed": "Failed to disconnect: {error}",
 
+  "notificationStatusChangedBody": "{appName}'s review status changed to \"{status}\"",
+  "@notificationStatusChangedBody": {
+    "placeholders": {
+      "appName": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+
   "reviewStatusWaitingReview": "Waiting for Review",
   "reviewStatusInReview": "In Review",
   "reviewStatusRejected": "Rejected",

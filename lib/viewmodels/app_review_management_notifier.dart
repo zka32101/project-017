@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/app_review_management.dart';
+import '../models/connected_app.dart';
 import '../models/review_status_type.dart';
+import '../services/notification_service.dart';
 import 'service_providers.dart';
 
 /// アプリごとの審査状態管理情報(手動ステータス上書き・提出日/審査開始日・メモ)の
@@ -56,6 +58,46 @@ class AppReviewManagementNotifier
     state = saved;
   }
 
+  /// 審査状態の実取得が成功するたびに、dashboard_providers.dartの
+  /// latestReviewStatusProviderから呼ばれる。前回把握していた状態
+  /// (lastKnownStatus)と比較し、変化していれば個別のプッシュ通知
+  /// （Should機能）を発火してから記録を更新する。
+  ///
+  /// - 初回取得時(lastKnownStatusが未設定=null)は比較対象が無いため、
+  ///   記録だけ行い通知はしない(登録直後に必ず1通来てしまうのを防ぐ)。
+  /// - notificationsEnabledがfalse(ユーザーが通知をオフにしている)でも
+  ///   記録自体は行う。そうしないと後で通知をオンに戻した際、オフの間に
+  ///   実際に起きた状態変化まで「変化した」と誤検知してしまうため。
+  Future<void> recordFetchedStatus({
+    required ConnectedApp app,
+    required ReviewStatusType status,
+    required NotificationService notificationService,
+    required bool notificationsEnabled,
+  }) async {
+    final previous = state.lastKnownStatus;
+    if (previous == status) return;
+
+    state = AppReviewManagement(
+      connectedAppId: state.connectedAppId,
+      manualStatusOverride: state.manualStatusOverride,
+      submittedAt: state.submittedAt,
+      reviewStartedAt: state.reviewStartedAt,
+      note: state.note,
+      lastKnownStatus: status,
+      updatedAt: state.updatedAt,
+    );
+    await ref
+        .read(localStoreServiceProvider)
+        .saveManagement(state.connectedAppId, state);
+
+    if (previous != null && notificationsEnabled) {
+      await notificationService.showReviewStatusChangedNotification(
+        app: app,
+        newStatus: status,
+      );
+    }
+  }
+
   Future<void> _update({
     required ReviewStatusType? manualStatusOverride,
     required DateTime? submittedAt,
@@ -68,6 +110,7 @@ class AppReviewManagementNotifier
       submittedAt: submittedAt,
       reviewStartedAt: reviewStartedAt,
       note: note,
+      lastKnownStatus: state.lastKnownStatus,
       updatedAt: DateTime.now(),
     );
     await ref

@@ -28,6 +28,7 @@ void main() {
         submittedAt: DateTime(2026, 8, 1),
         reviewStartedAt: DateTime(2026, 8, 3),
         note: 'サポートへ問い合わせ中',
+        lastKnownStatus: ReviewStatusType.inReview,
         updatedAt: DateTime(2026, 8, 5, 12, 30),
       );
       final restored = AppReviewManagement.fromJson(original.toJson());
@@ -37,7 +38,17 @@ void main() {
       expect(restored.submittedAt, original.submittedAt);
       expect(restored.reviewStartedAt, original.reviewStartedAt);
       expect(restored.note, original.note);
+      expect(restored.lastKnownStatus, original.lastKnownStatus);
       expect(restored.updatedAt, original.updatedAt);
+    });
+
+    test('lastKnownStatusが設定されていてもisEmptyの判定には影響しない'
+        '(内部トラッキング項目であり、ユーザーが設定した管理情報ではないため)', () {
+      final management = AppReviewManagement(
+        connectedAppId: 'app1',
+        lastKnownStatus: ReviewStatusType.approved,
+      );
+      expect(management.isEmpty, isTrue);
     });
 
     test('manualStatusOverride/日付/updatedAtがnullでも往復できる', () {

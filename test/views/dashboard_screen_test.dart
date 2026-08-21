@@ -10,6 +10,7 @@ import 'package:ririkan/models/rejection_detail.dart';
 import 'package:ririkan/models/review_status_snapshot.dart';
 import 'package:ririkan/models/review_status_type.dart';
 import 'package:ririkan/router/app_router.dart';
+import 'package:ririkan/services/notification_service.dart';
 import 'package:ririkan/services/review_status_service.dart';
 import 'package:ririkan/services/service_result.dart';
 import 'package:ririkan/viewmodels/app_review_management_notifier.dart';
@@ -65,7 +66,10 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
 class _FixedReviewStatusService implements ReviewStatusService {
   _FixedReviewStatusService(this.status);
 
-  final ReviewStatusType status;
+  // 審査状態の個別通知テストでは、同じインスタンスのままstatusを書き換えて
+  // からlatestReviewStatusProviderをinvalidateし、「実取得のたびに違う状態が
+  // 返ってくる」状況を再現する。
+  ReviewStatusType status;
 
   @override
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
@@ -466,6 +470,104 @@ void main() {
       expect(find.text('AppA'), findsNothing);
       expect(find.text('AppB'), findsOneWidget);
       expect(find.text('リリカン'), findsOneWidget);
+    });
+  });
+
+  group('審査状態の個別通知（Should機能）', () {
+    testWidgets('通知が有効な場合、実取得のたびに状態が変わると個別通知が発火する',
+        (tester) async {
+      final service = _FixedReviewStatusService(ReviewStatusType.inReview);
+      final notification = FakeNotificationService();
+      final secureStorage = FakeSecureStorageService();
+      await secureStorage.writeValue(
+        key: notificationsEnabledStorageKey,
+        value: 'true',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(secureStorage),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          notificationServiceProvider.overrideWithValue(notification),
+          reviewStatusServiceProvider(PlatformType.ios)
+              .overrideWithValue(service),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final app = await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.app1',
+            displayName: 'テストアプリ',
+            apiKey: 'k',
+          );
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 初回取得(inReview)は比較対象が無いため通知しない。
+      expect(notification.statusChangeNotificationCount, 0);
+
+      // 状態がrejectedへ変わって再取得される(例: リトライ)と通知が1件発火する。
+      service.status = ReviewStatusType.rejected;
+      container.invalidate(latestReviewStatusProvider(app));
+      await tester.pumpAndSettle();
+
+      expect(notification.statusChangeNotificationCount, 1);
+      expect(notification.lastNotifiedStatus, ReviewStatusType.rejected);
+
+      // 同じrejectedのまま再取得しても、変化が無ければ通知は増えない。
+      container.invalidate(latestReviewStatusProvider(app));
+      await tester.pumpAndSettle();
+
+      expect(notification.statusChangeNotificationCount, 1);
+    });
+
+    testWidgets('通知設定がオフの場合は状態が変化しても通知しない', (tester) async {
+      final service = _FixedReviewStatusService(ReviewStatusType.inReview);
+      final notification = FakeNotificationService();
+      final container = ProviderContainer(
+        overrides: [
+          // notificationsEnabledStorageKeyを書き込まない=オフのまま(初期値)。
+          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          notificationServiceProvider.overrideWithValue(notification),
+          reviewStatusServiceProvider(PlatformType.ios)
+              .overrideWithValue(service),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final app = await container.read(connectedAppsProvider.notifier).registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.app1',
+            displayName: 'テストアプリ',
+            apiKey: 'k',
+          );
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      service.status = ReviewStatusType.rejected;
+      container.invalidate(latestReviewStatusProvider(app));
+      await tester.pumpAndSettle();
+
+      expect(notification.statusChangeNotificationCount, 0);
     });
   });
 }

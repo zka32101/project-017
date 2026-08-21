@@ -564,6 +564,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String notificationStatusChangedBody(String appName, String status) {
+    return '$appName\'s review status changed to \"$status\"';
+  }
+
+  @override
   String get reviewStatusWaitingReview => 'Waiting for Review';
 
   @override

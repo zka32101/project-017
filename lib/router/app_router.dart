@@ -21,11 +21,11 @@ import '../views/settings/settings_screen.dart';
 /// ダッシュボード → アプリ詳細
 ///
 /// /app-detail/:id 等は extra(ConnectedApp)無しでもidだけから解決できる
-/// ため、URLベースのディープリンク一般には対応できる構造になっている。
-/// ただし現状、通知タップをこのルートへ実際に連携させる仕組み
-/// (NotificationServiceのタップハンドラ)自体が無いため、「通知タップ→
-/// このルートを開く」という導線はまだ結線されていない
-/// (詳細はNotificationService/AppDetailScreenのドキュメントコメント参照)。
+/// ため、URLベースのディープリンク一般に対応できる構造になっている。
+/// 審査状態の個別通知(NotificationService.showReviewStatusChangedNotification)
+/// はこの仕組みを使って「通知タップ→該当アプリの詳細画面（リジェクト時は
+/// リジェクト理由タブ）を開く」を実現する(main.dartでGoRouterの
+/// push/goを通知タップ・起動時ペイロードへ結線している)。
 GoRouter buildAppRouter() {
   return GoRouter(
     // ドッグフーディング・実機テスト用：初期位置をダッシュボードに変更
@@ -57,11 +57,19 @@ GoRouter buildAppRouter() {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           final extra = state.extra;
+          // ?tab=<index> はリジェクト通知タップ時にリジェクト理由タブを
+          // 直接開くために使う(NotificationService.showReviewStatusChangedNotification
+          // 参照)。それ以外の遷移元では付与されず、その場合は既定の0番目
+          // (審査履歴タブ)が開く。
+          final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
           if (extra is ConnectedApp) {
-            return AppDetailScreen(app: extra);
+            return AppDetailScreen(app: extra, initialTabIndex: tab);
           }
           // ディープリンク（通知タップ等）で extra が無い場合は id から解決する。
-          return _ByIdResolver(id: id, builder: (app) => AppDetailScreen(app: app));
+          return _ByIdResolver(
+            id: id,
+            builder: (app) => AppDetailScreen(app: app, initialTabIndex: tab),
+          );
         },
       ),
       GoRoute(

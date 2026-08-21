@@ -4,6 +4,7 @@ import '../models/connected_app.dart';
 import '../models/platform_type.dart';
 import '../models/review_status_snapshot.dart';
 import '../models/review_status_type.dart';
+import '../services/notification_service.dart';
 import '../services/service_result.dart';
 import '../services/widget_sync_service.dart';
 import 'app_review_management_notifier.dart';
@@ -13,7 +14,9 @@ import 'service_providers.dart';
 /// アプリ単体の最新審査状態（ダッシュボードのカード表示用）。
 /// 取得成功時、対象アプリの手動ステータス上書きを自動的にクリアする
 /// (AppReviewManagementのドキュメントコメント参照。手動上書きは「次回の
-/// 実取得成功まで」の一時的な訂正用途のため)。
+/// 実取得成功まで」の一時的な訂正用途のため)。また、前回の実取得成功時から
+/// 状態が変化していれば個別のプッシュ通知を発火する
+/// (AppReviewManagementNotifier.recordFetchedStatus参照。Should機能)。
 final latestReviewStatusProvider =
     FutureProvider.family<ReviewStatusSnapshot?, ConnectedApp>(
         (ref, app) async {
@@ -22,8 +25,32 @@ final latestReviewStatusProvider =
   await ref
       .read(appReviewManagementProvider(app.id).notifier)
       .clearManualStatusOverrideAfterFetch();
-  return data.isEmpty ? null : data.first;
+  final snapshot = data.isEmpty ? null : data.first;
+  if (snapshot != null) {
+    await ref.read(appReviewManagementProvider(app.id).notifier).recordFetchedStatus(
+          app: app,
+          status: snapshot.statusType,
+          notificationService: ref.read(notificationServiceProvider),
+          notificationsEnabled: await _isNotificationsEnabled(ref),
+        );
+  }
+  return snapshot;
 });
+
+/// SecureStorageService.readValueはSecureStorageService本体では実際の
+/// FlutterSecureStorage(プラットフォームチャネル)を直接叩く実装のため、
+/// 通知設定の読み取り失敗が審査状態の取得自体を巻き込んで失敗させない
+/// ように吸収する(LocalStoreServiceと同様、通知はベストエフォート機能)。
+Future<bool> _isNotificationsEnabled(Ref ref) async {
+  try {
+    return await ref
+            .read(secureStorageServiceProvider)
+            .readValue(notificationsEnabledStorageKey) ==
+        'true';
+  } catch (_) {
+    return false;
+  }
+}
 
 /// ダッシュボード表示順（sortOrder昇順＝リリース間近のアプリを上部固定、Must#5）
 final sortedConnectedAppsProvider = Provider<List<ConnectedApp>>((ref) {

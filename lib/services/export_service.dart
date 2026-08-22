@@ -25,6 +25,12 @@ class ExportService {
   /// pdfパッケージの既定フォントは日本語グリフを含まないため、明示的に埋め込む。
   static const _japaneseFontAsset = 'assets/fonts/NotoSansJP-Variable.ttf';
 
+  /// ExportJob.expiresAt(export_screen.dartの「有効期限」表示)とpurgeExpiredExports()
+  /// の削除しきい値を必ず同じ値にするための共有定数。以前はUI上「24時間で失効」と
+  /// 表示するだけで実際のファイル削除が伴っておらず、端末内にエクスポート
+  /// ファイルが無期限に蓄積し続けていた。
+  static const expiryDuration = Duration(hours: 24);
+
   Future<ExportJob> generate({
     required String userId,
     required ConnectedApp app,
@@ -45,8 +51,12 @@ class ExportService {
         final csv = buildCsv(app, reviewHistory, rejections, buildFailures);
         await file.writeAsString(csv);
       } else {
-        final bytes =
-            await buildPdf(app, reviewHistory, rejections, buildFailures);
+        final bytes = await buildPdf(
+          app,
+          reviewHistory,
+          rejections,
+          buildFailures,
+        );
         await file.writeAsBytes(bytes);
       }
 
@@ -60,7 +70,7 @@ class ExportService {
         dateRange: dateRange,
         status: ExportJobStatus.ready,
         fileUrl: file.path,
-        expiresAt: DateTime.now().add(const Duration(hours: 24)),
+        expiresAt: DateTime.now().add(expiryDuration),
       );
     } catch (e) {
       return ExportJob(
@@ -105,7 +115,7 @@ class ExportService {
         dateRange: dateRange,
         status: ExportJobStatus.ready,
         fileUrl: file.path,
-        expiresAt: DateTime.now().add(const Duration(hours: 24)),
+        expiresAt: DateTime.now().add(expiryDuration),
       );
     } catch (e) {
       return ExportJob(
@@ -123,12 +133,12 @@ class ExportService {
   /// ReviewStatusType.label はUI側でAppLocalizationsを渡す設計に変更したため
   /// （export_service.dartはBuildContextを持たない）、レポート専用に日本語固定のラベルを別途持つ。
   static String _reportLabelFor(ReviewStatusType status) => switch (status) {
-        ReviewStatusType.waitingReview => '審査待ち',
-        ReviewStatusType.inReview => '審査中',
-        ReviewStatusType.rejected => 'リジェクト',
-        ReviewStatusType.approved => '承認済み',
-        ReviewStatusType.live => '公開中',
-      };
+    ReviewStatusType.waitingReview => '審査待ち',
+    ReviewStatusType.inReview => '審査中',
+    ReviewStatusType.rejected => 'リジェクト',
+    ReviewStatusType.approved => '承認済み',
+    ReviewStatusType.live => '公開中',
+  };
 
   /// ファイル名に使うと壊れる文字（パス区切り、制御文字等）をアンダースコアに置換する。
   /// app.displayName はアプリ登録画面の自由入力のため、'/' や NUL 文字等を含み得る
@@ -136,8 +146,42 @@ class ExportService {
   /// 存在しないサブディレクトリを指すパスになり、書き込みが必ず失敗していた）。
   /// buildCsv/buildPdf と同じ理由（ファイルI/Oを含まない）で公開し単体テスト可能にしている。
   static String sanitizeForFileName(String name) {
-    final sanitized = name.replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_').trim();
+    final sanitized = name
+        .replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_')
+        .trim();
     return sanitized.isEmpty ? 'app' : sanitized;
+  }
+
+  /// generate()/generateAll()/exportAppRoster()が書き出したファイル
+  /// (ririkan_export_*/ririkan_apps_*)のうち、作成からexpiryDuration
+  /// (24時間)以上経過したものを削除する。以前はExportJob.expiresAtで
+  /// 「24時間で失効」とUI表示するだけで実際の削除が伴っておらず、端末内に
+  /// 無期限に蓄積し続けていた。main()から起動時に1回呼ぶ想定
+  /// (失敗しても例外を投げないベストエフォート)。
+  Future<void> purgeExpiredExports() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      if (!await dir.exists()) return;
+      final cutoff = DateTime.now().subtract(expiryDuration);
+      await for (final entity in dir.list()) {
+        if (entity is! File) continue;
+        final name = entity.uri.pathSegments.last;
+        if (!name.startsWith('ririkan_export_') &&
+            !name.startsWith('ririkan_apps_')) {
+          continue;
+        }
+        try {
+          final stat = await entity.stat();
+          if (stat.modified.isBefore(cutoff)) {
+            await entity.delete();
+          }
+        } catch (_) {
+          // 1件の削除・stat失敗が他のファイルの掃除を止めないようにする。
+        }
+      }
+    } catch (_) {
+      // ベストエフォート。失敗してもアプリ起動自体は継続する。
+    }
   }
 
   /// 「審査履歴/リジェクト理由/ビルド失敗ログ」の3セクション分の行を組み立てる
@@ -147,33 +191,36 @@ class ExportService {
     List<ReviewStatusSnapshot> reviewHistory,
     List<RejectionDetail> rejections,
     List<BuildFailureLog> buildFailures,
-  ) =>
+  ) => [
+    ['審査履歴'],
+    ['バージョン', '状態', '取得日時'],
+    for (final s in reviewHistory)
       [
-        ['審査履歴'],
-        ['バージョン', '状態', '取得日時'],
-        for (final s in reviewHistory)
-          [s.versionString, _reportLabelFor(s.statusType), s.fetchedAt.toIso8601String()],
-        [],
-        ['リジェクト理由'],
-        ['ガイドライン番号', 'タイトル', 'メッセージ', 'リジェクト日時'],
-        for (final r in rejections)
-          [
-            r.guidelineNumber ?? '',
-            r.guidelineTitle ?? '',
-            r.resolutionCenterMessage,
-            r.rejectedAt.toIso8601String(),
-          ],
-        [],
-        ['ビルド失敗ログ'],
-        ['ビルド番号', 'プラットフォーム', '失敗理由', '発生日時'],
-        for (final b in buildFailures)
-          [
-            b.buildNumber,
-            b.platform.label,
-            b.failureReason,
-            b.occurredAt.toIso8601String(),
-          ],
-      ];
+        s.versionString,
+        _reportLabelFor(s.statusType),
+        s.fetchedAt.toIso8601String(),
+      ],
+    [],
+    ['リジェクト理由'],
+    ['ガイドライン番号', 'タイトル', 'メッセージ', 'リジェクト日時'],
+    for (final r in rejections)
+      [
+        r.guidelineNumber ?? '',
+        r.guidelineTitle ?? '',
+        r.resolutionCenterMessage,
+        r.rejectedAt.toIso8601String(),
+      ],
+    [],
+    ['ビルド失敗ログ'],
+    ['ビルド番号', 'プラットフォーム', '失敗理由', '発生日時'],
+    for (final b in buildFailures)
+      [
+        b.buildNumber,
+        b.platform.label,
+        b.failureReason,
+        b.occurredAt.toIso8601String(),
+      ],
+  ];
 
   /// CSV生成ロジック本体（ファイルI/Oを含まないため単体テスト可能）。
   String buildCsv(
@@ -253,60 +300,67 @@ class ExportService {
     required List<ReviewStatusSnapshot> reviewHistory,
     required List<RejectionDetail> rejections,
     required List<BuildFailureLog> buildFailures,
-  }) =>
-      [
-        pw.Header(level: 1, text: '審査履歴'),
-        pw.TableHelper.fromTextArray(
-          headerStyle: headerStyle,
-          headerDecoration: headerDecoration,
-          headers: ['バージョン', '状態', '取得日時'],
-          data: reviewHistory
-              .map((s) => [
-                    s.versionString,
-                    _reportLabelFor(s.statusType),
-                    s.fetchedAt.toIso8601String(),
-                  ])
-              .toList(),
-        ),
-        pw.SizedBox(height: 16),
-        pw.Header(level: 1, text: 'リジェクト理由'),
-        pw.TableHelper.fromTextArray(
-          headerStyle: headerStyle,
-          headerDecoration: headerDecoration,
-          headers: ['ガイドライン', 'メッセージ', '日時'],
-          data: rejections
-              .map((r) => [
-                    r.guidelineNumber ?? r.guidelineTitle ?? '-',
-                    r.resolutionCenterMessage,
-                    r.rejectedAt.toIso8601String(),
-                  ])
-              .toList(),
-        ),
-        pw.SizedBox(height: 16),
-        pw.Header(level: 1, text: 'ビルド失敗ログ'),
-        pw.TableHelper.fromTextArray(
-          headerStyle: headerStyle,
-          headerDecoration: headerDecoration,
-          headers: ['ビルド番号', 'プラットフォーム', '失敗理由', '日時'],
-          data: buildFailures
-              .map((b) => [
-                    b.buildNumber,
-                    b.platform.label,
-                    b.failureReason,
-                    b.occurredAt.toIso8601String(),
-                  ])
-              .toList(),
-        ),
-      ];
+  }) => [
+    pw.Header(level: 1, text: '審査履歴'),
+    pw.TableHelper.fromTextArray(
+      headerStyle: headerStyle,
+      headerDecoration: headerDecoration,
+      headers: ['バージョン', '状態', '取得日時'],
+      data: reviewHistory
+          .map(
+            (s) => [
+              s.versionString,
+              _reportLabelFor(s.statusType),
+              s.fetchedAt.toIso8601String(),
+            ],
+          )
+          .toList(),
+    ),
+    pw.SizedBox(height: 16),
+    pw.Header(level: 1, text: 'リジェクト理由'),
+    pw.TableHelper.fromTextArray(
+      headerStyle: headerStyle,
+      headerDecoration: headerDecoration,
+      headers: ['ガイドライン', 'メッセージ', '日時'],
+      data: rejections
+          .map(
+            (r) => [
+              r.guidelineNumber ?? r.guidelineTitle ?? '-',
+              r.resolutionCenterMessage,
+              r.rejectedAt.toIso8601String(),
+            ],
+          )
+          .toList(),
+    ),
+    pw.SizedBox(height: 16),
+    pw.Header(level: 1, text: 'ビルド失敗ログ'),
+    pw.TableHelper.fromTextArray(
+      headerStyle: headerStyle,
+      headerDecoration: headerDecoration,
+      headers: ['ビルド番号', 'プラットフォーム', '失敗理由', '日時'],
+      data: buildFailures
+          .map(
+            (b) => [
+              b.buildNumber,
+              b.platform.label,
+              b.failureReason,
+              b.occurredAt.toIso8601String(),
+            ],
+          )
+          .toList(),
+    ),
+  ];
 
   /// pdfパッケージのpw.Document生成に必要な日本語フォント・共通スタイルを
   /// まとめて用意する(buildPdf/buildPdfForAll共通)。
   Future<
-      ({
-        pw.Document doc,
-        pw.TextStyle headerStyle,
-        pw.BoxDecoration headerDecoration,
-      })> _preparePdfDocument() async {
+    ({
+      pw.Document doc,
+      pw.TextStyle headerStyle,
+      pw.BoxDecoration headerDecoration,
+    })
+  >
+  _preparePdfDocument() async {
     final fontData = await rootBundle.load(_japaneseFontAsset);
     final japaneseFont = pw.Font.ttf(fontData);
 
@@ -323,7 +377,11 @@ class ExportService {
       color: PdfColors.white,
     );
     const headerDecoration = pw.BoxDecoration(color: PdfColors.blueGrey700);
-    return (doc: doc, headerStyle: headerStyle, headerDecoration: headerDecoration);
+    return (
+      doc: doc,
+      headerStyle: headerStyle,
+      headerDecoration: headerDecoration,
+    );
   }
 
   /// PDF生成ロジック本体（ファイルI/Oを含まないため単体テスト可能）。

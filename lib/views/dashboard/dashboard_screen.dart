@@ -91,6 +91,7 @@ class DashboardScreen extends ConsumerWidget {
           ? AppBar(
               leading: IconButton(
                 icon: const Icon(Icons.close),
+                tooltip: l10n.dashboardExitSelectionTooltip,
                 onPressed: exitSelectionMode,
               ),
               title: Text(l10n.dashboardSelectedCount(selectedIds.length)),
@@ -114,16 +115,19 @@ class DashboardScreen extends ConsumerWidget {
                   IconButton(
                     icon: const Icon(Icons.checklist_outlined),
                     tooltip: l10n.dashboardSelectModeTooltip,
-                    onPressed: () => ref
-                        .read(dashboardSelectionModeProvider.notifier)
-                        .state = true,
+                    onPressed: () =>
+                        ref
+                                .read(dashboardSelectionModeProvider.notifier)
+                                .state =
+                            true,
                   ),
                 PopupMenuButton<DashboardSortOption>(
                   icon: const Icon(Icons.sort),
                   tooltip: l10n.dashboardSortLabel,
                   initialValue: sortOption,
                   onSelected: (value) {
-                    ref.read(dashboardSortOptionProvider.notifier).state = value;
+                    ref.read(dashboardSortOptionProvider.notifier).state =
+                        value;
                     saveDashboardFilterPrefs(ref);
                   },
                   itemBuilder: (context) => [
@@ -166,30 +170,31 @@ class DashboardScreen extends ConsumerWidget {
                       ? _EmptyDashboard(message: l10n.dashboardNoMatchMessage)
                       // 選択モード中はドラッグ並び替えと選択タップの操作が競合するため、
                       // manualソートでも常にListView(ドラッグ無効)にする。
-                      : !selectionMode && sortOption == DashboardSortOption.manual
-                          ? ReorderableListView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                              itemCount: apps.length,
-                              onReorderItem: (oldIndex, newIndex) => ref
-                                  .read(connectedAppsProvider.notifier)
-                                  .reorder(oldIndex, newIndex),
-                              itemBuilder: (context, i) => _AppStatusCard(
-                                key: ValueKey(apps[i].id),
-                                app: apps[i],
-                                selectionMode: selectionMode,
-                                selected: selectedIds.contains(apps[i].id),
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                              itemCount: apps.length,
-                              itemBuilder: (context, i) => _AppStatusCard(
-                                key: ValueKey(apps[i].id),
-                                app: apps[i],
-                                selectionMode: selectionMode,
-                                selected: selectedIds.contains(apps[i].id),
-                              ),
-                            ),
+                      : !selectionMode &&
+                            sortOption == DashboardSortOption.manual
+                      ? ReorderableListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount: apps.length,
+                          onReorderItem: (oldIndex, newIndex) => ref
+                              .read(connectedAppsProvider.notifier)
+                              .reorder(oldIndex, newIndex),
+                          itemBuilder: (context, i) => _AppStatusCard(
+                            key: ValueKey(apps[i].id),
+                            app: apps[i],
+                            selectionMode: selectionMode,
+                            selected: selectedIds.contains(apps[i].id),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount: apps.length,
+                          itemBuilder: (context, i) => _AppStatusCard(
+                            key: ValueKey(apps[i].id),
+                            app: apps[i],
+                            selectionMode: selectionMode,
+                            selected: selectedIds.contains(apps[i].id),
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -267,7 +272,8 @@ class _SearchAndFilterBar extends ConsumerWidget {
                 label: Text(l10n.dashboardFilterAll),
                 selected: platformFilter == null,
                 onSelected: (_) {
-                  ref.read(dashboardPlatformFilterProvider.notifier).state = null;
+                  ref.read(dashboardPlatformFilterProvider.notifier).state =
+                      null;
                   saveDashboardFilterPrefs(ref);
                 },
               ),
@@ -293,10 +299,15 @@ class _SearchAndFilterBar extends ConsumerWidget {
                 label: Text(l10n.dashboardAttentionFilter(attentionCount)),
                 avatar: attentionOnly
                     ? null
-                    : const Icon(Icons.error_outline, size: 18, color: AppTheme.danger),
+                    : const Icon(
+                        Icons.error_outline,
+                        size: 18,
+                        color: AppTheme.danger,
+                      ),
                 selected: attentionOnly,
                 onSelected: (value) {
-                  ref.read(dashboardAttentionOnlyProvider.notifier).state = value;
+                  ref.read(dashboardAttentionOnlyProvider.notifier).state =
+                      value;
                   saveDashboardFilterPrefs(ref);
                 },
               ),
@@ -342,7 +353,10 @@ class _EmptyDashboard extends StatelessWidget {
           children: [
             const Icon(Icons.radar, size: 56, color: AppTheme.textSecondary),
             const SizedBox(height: 16),
-            Text(message, style: const TextStyle(color: AppTheme.textSecondary)),
+            Text(
+              message,
+              style: const TextStyle(color: AppTheme.textSecondary),
+            ),
           ],
         ),
       ),
@@ -368,8 +382,9 @@ class _AppStatusCard extends ConsumerWidget {
     // 管理タブ(app_detail_screen.dart)で設定した手動ステータス上書きの
     // 復元(初回のみ)。checklist_screen.dart等と同じパターンでbareにwatch。
     ref.watch(appReviewManagementBootstrapProvider(app.id));
-    final manualOverride =
-        ref.watch(appReviewManagementProvider(app.id)).manualStatusOverride;
+    final manualOverride = ref
+        .watch(appReviewManagementProvider(app.id))
+        .manualStatusOverride;
 
     void toggleSelected() {
       final current = ref.read(dashboardSelectedAppIdsProvider);
@@ -378,72 +393,91 @@ class _AppStatusCard extends ConsumerWidget {
           : (current.toSet()..add(app.id));
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        onTap: selectionMode
-            ? toggleSelected
-            : () => context.push('/app-detail/${app.id}', extra: app),
-        leading: selectionMode
-            ? Checkbox(
-                value: selected,
-                onChanged: (_) => toggleSelected(),
-              )
-            : CircleAvatar(
-                backgroundColor: AppTheme.surfaceVariant,
-                child: Text(app.platform == PlatformType.ios ? 'iOS' : 'And',
-                    style: const TextStyle(fontSize: 10)),
-              ),
-        title: Text(app.displayName),
-        subtitle: statusAsync.when(
-          data: (s) {
-            final status = manualOverride ?? s?.statusType;
-            if (status == null) return Text(l10n.dashboardStatusUnknown);
-            final label = status.label(l10n);
-            final text = s == null ? label : '${s.versionString} ・ $label';
-            return Text(manualOverride != null
-                ? l10n.dashboardManualStatusSuffix(text)
-                : text);
-          },
-          loading: () => Text(l10n.dashboardStatusLoading),
-          error: (e, _) => manualOverride == null
-              ? Text(localizedErrorMessage(l10n, e),
-                  maxLines: 1, overflow: TextOverflow.ellipsis)
-              : Text(l10n.dashboardManualStatusSuffix(manualOverride.label(l10n))),
-        ),
-        trailing: statusAsync.when(
-          data: (s) {
-            final status = manualOverride ?? s?.statusType;
-            return Container(
+    return Semantics(
+      // 選択モード中はチェック状態(色だけで区別しがちな「選択済み」)を
+      // スクリーンリーダーにも明示する(アクセシビリティ対応)。通常モードでは
+      // 選択という概念自体が無いためnull(=関与しない)にする。
+      selected: selectionMode ? selected : null,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
+          onTap: selectionMode
+              ? toggleSelected
+              : () => context.push('/app-detail/${app.id}', extra: app),
+          leading: selectionMode
+              ? Checkbox(value: selected, onChanged: (_) => toggleSelected())
+              : CircleAvatar(
+                  backgroundColor: AppTheme.surfaceVariant,
+                  child: Text(
+                    app.platform == PlatformType.ios ? 'iOS' : 'And',
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                ),
+          title: Text(app.displayName),
+          subtitle: statusAsync.when(
+            data: (s) {
+              final status = manualOverride ?? s?.statusType;
+              if (status == null) return Text(l10n.dashboardStatusUnknown);
+              final label = status.label(l10n);
+              final text = s == null ? label : '${s.versionString} ・ $label';
+              return Text(
+                manualOverride != null
+                    ? l10n.dashboardManualStatusSuffix(text)
+                    : text,
+              );
+            },
+            loading: () => Text(l10n.dashboardStatusLoading),
+            error: (e, _) => manualOverride == null
+                ? Text(
+                    localizedErrorMessage(l10n, e),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : Text(
+                    l10n.dashboardManualStatusSuffix(
+                      manualOverride.label(l10n),
+                    ),
+                  ),
+          ),
+          trailing: statusAsync.when(
+            data: (s) {
+              final status = manualOverride ?? s?.statusType;
+              return Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: status == null
+                      ? AppTheme.textSecondary
+                      : AppTheme.colorForStatus(status),
+                ),
+              );
+            },
+            loading: () => const SizedBox(
               width: 12,
               height: 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: status == null
-                    ? AppTheme.textSecondary
-                    : AppTheme.colorForStatus(status),
-              ),
-            );
-          },
-          loading: () => const SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          error: (_, _) => manualOverride != null
-              ? Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.colorForStatus(manualOverride),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            error: (_, _) => manualOverride != null
+                ? Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.colorForStatus(manualOverride),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(
+                      Icons.refresh,
+                      size: 18,
+                      color: AppTheme.danger,
+                    ),
+                    tooltip: l10n.commonRetry,
+                    onPressed: () =>
+                        ref.invalidate(latestReviewStatusProvider(app)),
                   ),
-                )
-              : IconButton(
-                  icon: const Icon(Icons.refresh, size: 18, color: AppTheme.danger),
-                  tooltip: l10n.commonRetry,
-                  onPressed: () => ref.invalidate(latestReviewStatusProvider(app)),
-                ),
+          ),
         ),
       ),
     );
@@ -485,12 +519,13 @@ class _BulkTagEditDialogState extends ConsumerState<_BulkTagEditDialog> {
     // 一覧表示する(全員が同じタグを持っているとは限らないため、「持っている
     // アプリからだけ取り除く」動作になる。removeTagFromApps参照)。
     final apps = ref.watch(connectedAppsProvider);
-    final tagsInSelection = apps
-        .where((a) => widget.appIds.contains(a.id))
-        .expand((a) => a.tags)
-        .toSet()
-        .toList()
-      ..sort();
+    final tagsInSelection =
+        apps
+            .where((a) => widget.appIds.contains(a.id))
+            .expand((a) => a.tags)
+            .toSet()
+            .toList()
+          ..sort();
 
     return AlertDialog(
       title: Text(widget.l10n.dashboardBulkTagEditTitle(widget.appIds.length)),

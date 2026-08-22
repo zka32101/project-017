@@ -224,6 +224,12 @@ abstract class AppLocalizations {
   /// **'選択'**
   String get dashboardSelectModeTooltip;
 
+  /// No description provided for @dashboardExitSelectionTooltip.
+  ///
+  /// In ja, this message translates to:
+  /// **'選択を解除'**
+  String get dashboardExitSelectionTooltip;
+
   /// No description provided for @dashboardSelectedCount.
   ///
   /// In ja, this message translates to:

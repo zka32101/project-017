@@ -74,6 +74,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dashboardSelectModeTooltip => '選択';
 
   @override
+  String get dashboardExitSelectionTooltip => '選択を解除';
+
+  @override
   String dashboardSelectedCount(int count) {
     return '$count件選択中';
   }

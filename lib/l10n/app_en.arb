@@ -24,6 +24,7 @@
   "dashboardNoMatchMessage": "No apps match your filters",
   "dashboardAttentionFilter": "Needs Attention ({count})",
   "dashboardSelectModeTooltip": "Select",
+  "dashboardExitSelectionTooltip": "Exit selection",
   "dashboardSelectedCount": "{count} selected",
   "dashboardBulkDeleteTooltip": "Delete selected apps",
   "dashboardBulkDeleteConfirmTitle": "Delete {count} selected apps?",

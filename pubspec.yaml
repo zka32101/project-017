@@ -57,7 +57,7 @@ dependencies:
   share_plus: ^10.1.4
 
   # ホーム画面ウィジェット（Should機能）: Dart⇔ネイティブ間の共有データ橋渡し
-  home_widget: ^0.7.0
+  home_widget: ^0.9.3
 
   # App Store Connect API 実接続用（GET /v1/apps によるアプリ一覧取得）。
   # JWT(ES256)署名にdart_jsonwebtoken、HTTP呼び出しにhttpを使用する。

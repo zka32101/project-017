@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ririkan/models/build_failure_log.dart';
@@ -38,27 +39,23 @@ class _AlwaysFailingReviewStatusService implements ReviewStatusService {
   @override
   Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
     ConnectedApp app,
-  ) async =>
-      const ServiceFailure(ServiceFailureReason.rejectionDetails);
+  ) async => const ServiceFailure(ServiceFailureReason.rejectionDetails);
 
   @override
   Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
     ConnectedApp app,
-  ) async =>
-      const ServiceFailure(ServiceFailureReason.buildFailureLogs);
+  ) async => const ServiceFailure(ServiceFailureReason.buildFailureLogs);
 
   @override
   Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
     String apiKey, {
     List<String> knownPackageNames = const [],
-  }) async =>
-      const ServiceFailure(ServiceFailureReason.appDiscovery);
+  }) async => const ServiceFailure(ServiceFailureReason.appDiscovery);
 
   @override
   Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
     ConnectedApp app,
-  ) async =>
-      const ServiceFailure(ServiceFailureReason.crashSummaries);
+  ) async => const ServiceFailure(ServiceFailureReason.crashSummaries);
 }
 
 /// 常に固定のReviewStatusSnapshotを返すテスト用Service。
@@ -75,59 +72,60 @@ class _FixedReviewStatusService implements ReviewStatusService {
   @override
   Future<ServiceResult<List<ReviewStatusSnapshot>>> fetchReviewStatus(
     ConnectedApp app,
-  ) async =>
-      ServiceSuccess([
-        ReviewStatusSnapshot(
-          id: '${app.id}_latest',
-          connectedAppId: app.id,
-          versionString: '1.0.0',
-          statusType: status,
-          fetchedAt: DateTime(2026, 8, 5),
-        ),
-      ]);
+  ) async => ServiceSuccess([
+    ReviewStatusSnapshot(
+      id: '${app.id}_latest',
+      connectedAppId: app.id,
+      versionString: '1.0.0',
+      statusType: status,
+      fetchedAt: DateTime(2026, 8, 5),
+    ),
+  ]);
 
   @override
   Future<ServiceResult<List<RejectionDetail>>> fetchRejectionDetails(
     ConnectedApp app,
-  ) async =>
-      const ServiceSuccess([]);
+  ) async => const ServiceSuccess([]);
 
   @override
   Future<ServiceResult<List<BuildFailureLog>>> fetchBuildFailureLogs(
     ConnectedApp app,
-  ) async =>
-      const ServiceSuccess([]);
+  ) async => const ServiceSuccess([]);
 
   @override
   Future<ServiceResult<List<DiscoverableApp>>> discoverApps(
     String apiKey, {
     List<String> knownPackageNames = const [],
-  }) async =>
-      const ServiceSuccess([]);
+  }) async => const ServiceSuccess([]);
 
   @override
   Future<ServiceResult<List<CrashSummary>>> fetchCrashSummaries(
     ConnectedApp app,
-  ) async =>
-      const ServiceSuccess([]);
+  ) async => const ServiceSuccess([]);
 }
 
 void main() {
-  testWidgets(
-      '手動ステータス上書きは自動取得値より優先して表示され、'
+  testWidgets('手動ステータス上書きは自動取得値より優先して表示され、'
       '次回の実取得成功で自動的にクリアされる', (tester) async {
     final container = ProviderContainer(
       overrides: [
-        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        secureStorageServiceProvider.overrideWithValue(
+          FakeSecureStorageService(),
+        ),
         localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
-        reviewStatusServiceProvider(PlatformType.ios)
-            .overrideWithValue(_FixedReviewStatusService(ReviewStatusType.approved)),
+        widgetSyncServiceProvider.overrideWithValue(
+          const FakeWidgetSyncService(),
+        ),
+        reviewStatusServiceProvider(PlatformType.ios).overrideWithValue(
+          _FixedReviewStatusService(ReviewStatusType.approved),
+        ),
       ],
     );
     addTearDown(container.dispose);
 
-    final app = await container.read(connectedAppsProvider.notifier).registerApp(
+    final app = await container
+        .read(connectedAppsProvider.notifier)
+        .registerApp(
           userId: 'u1',
           platform: PlatformType.ios,
           bundleIdOrPackageName: 'works.petit.app1',
@@ -168,21 +166,27 @@ void main() {
     );
   });
 
-  testWidgets('審査状態の取得に失敗すると再試行アイコンが表示され、タップで再取得される',
-      (tester) async {
+  testWidgets('審査状態の取得に失敗すると再試行アイコンが表示され、タップで再取得される', (tester) async {
     final failingService = _AlwaysFailingReviewStatusService();
     final container = ProviderContainer(
       overrides: [
-        secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+        secureStorageServiceProvider.overrideWithValue(
+          FakeSecureStorageService(),
+        ),
         localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-        widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
-        reviewStatusServiceProvider(PlatformType.ios)
-            .overrideWithValue(failingService),
+        widgetSyncServiceProvider.overrideWithValue(
+          const FakeWidgetSyncService(),
+        ),
+        reviewStatusServiceProvider(
+          PlatformType.ios,
+        ).overrideWithValue(failingService),
       ],
     );
     addTearDown(container.dispose);
 
-    await container.read(connectedAppsProvider.notifier).registerApp(
+    await container
+        .read(connectedAppsProvider.notifier)
+        .registerApp(
           userId: 'u1',
           platform: PlatformType.ios,
           bundleIdOrPackageName: 'works.petit.app1',
@@ -217,9 +221,13 @@ void main() {
     setUp(() {
       container = ProviderContainer(
         overrides: [
-          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          secureStorageServiceProvider.overrideWithValue(
+            FakeSecureStorageService(),
+          ),
           localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
         ],
       );
     });
@@ -227,14 +235,18 @@ void main() {
     tearDown(() => container.dispose());
 
     Future<void> pumpDashboardWith(WidgetTester tester) async {
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.zebra',
             displayName: 'Zebra iOS',
             apiKey: 'k',
           );
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.android,
             bundleIdOrPackageName: 'works.petit.apple',
@@ -339,15 +351,21 @@ void main() {
     setUp(() {
       container = ProviderContainer(
         overrides: [
-          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          secureStorageServiceProvider.overrideWithValue(
+            FakeSecureStorageService(),
+          ),
           localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
           // iOSはリジェクト(要注意)、Androidは承認済み(要注意でない)固定にして
           // 要注意フィルターの絞り込みを検証する。
-          reviewStatusServiceProvider(PlatformType.ios)
-              .overrideWithValue(_FixedReviewStatusService(ReviewStatusType.rejected)),
-          reviewStatusServiceProvider(PlatformType.android)
-              .overrideWithValue(_FixedReviewStatusService(ReviewStatusType.approved)),
+          reviewStatusServiceProvider(PlatformType.ios).overrideWithValue(
+            _FixedReviewStatusService(ReviewStatusType.rejected),
+          ),
+          reviewStatusServiceProvider(PlatformType.android).overrideWithValue(
+            _FixedReviewStatusService(ReviewStatusType.approved),
+          ),
         ],
       );
     });
@@ -355,14 +373,18 @@ void main() {
     tearDown(() => container.dispose());
 
     testWidgets('要注意フィルターを選ぶとリジェクト/審査中のアプリだけ表示される', (tester) async {
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.rejected',
             displayName: 'リジェクトApp',
             apiKey: 'k',
           );
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.android,
             bundleIdOrPackageName: 'works.petit.approved',
@@ -390,21 +412,27 @@ void main() {
     });
 
     testWidgets('タグを設定したアプリはタグチップで絞り込める', (tester) async {
-      final a = await container.read(connectedAppsProvider.notifier).registerApp(
+      final a = await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.a',
             displayName: 'AppA',
             apiKey: 'k',
           );
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.android,
             bundleIdOrPackageName: 'works.petit.b',
             displayName: 'AppB',
             apiKey: 'k',
           );
-      await container.read(connectedAppsProvider.notifier).setTags(a.id, ['自社']);
+      await container.read(connectedAppsProvider.notifier).setTags(a.id, [
+        '自社',
+      ]);
 
       final router = buildAppRouter();
       await tester.pumpWidget(
@@ -426,14 +454,18 @@ void main() {
     });
 
     testWidgets('選択モードでチェックした複数アプリを一括削除できる', (tester) async {
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.a',
             displayName: 'AppA',
             apiKey: 'k',
           );
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.android,
             bundleIdOrPackageName: 'works.petit.b',
@@ -475,8 +507,7 @@ void main() {
   });
 
   group('審査状態の個別通知（Should機能）', () {
-    testWidgets('通知が有効な場合、実取得のたびに状態が変わると個別通知が発火する',
-        (tester) async {
+    testWidgets('通知が有効な場合、実取得のたびに状態が変わると個別通知が発火する', (tester) async {
       final service = _FixedReviewStatusService(ReviewStatusType.inReview);
       final notification = FakeNotificationService();
       final secureStorage = FakeSecureStorageService();
@@ -488,15 +519,20 @@ void main() {
         overrides: [
           secureStorageServiceProvider.overrideWithValue(secureStorage),
           localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
           notificationServiceProvider.overrideWithValue(notification),
-          reviewStatusServiceProvider(PlatformType.ios)
-              .overrideWithValue(service),
+          reviewStatusServiceProvider(
+            PlatformType.ios,
+          ).overrideWithValue(service),
         ],
       );
       addTearDown(container.dispose);
 
-      final app = await container.read(connectedAppsProvider.notifier).registerApp(
+      final app = await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.app1',
@@ -537,17 +573,24 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           // notificationsEnabledStorageKeyを書き込まない=オフのまま(初期値)。
-          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          secureStorageServiceProvider.overrideWithValue(
+            FakeSecureStorageService(),
+          ),
           localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
           notificationServiceProvider.overrideWithValue(notification),
-          reviewStatusServiceProvider(PlatformType.ios)
-              .overrideWithValue(service),
+          reviewStatusServiceProvider(
+            PlatformType.ios,
+          ).overrideWithValue(service),
         ],
       );
       addTearDown(container.dispose);
 
-      final app = await container.read(connectedAppsProvider.notifier).registerApp(
+      final app = await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.app1',
@@ -573,8 +616,9 @@ void main() {
   });
 
   group('フィルター条件の保存（大量アプリ管理）', () {
-    testWidgets('プラットフォームフィルターを選ぶと保存され、次回起動時(新しいcontainer)でも復元される',
-        (tester) async {
+    testWidgets('プラットフォームフィルターを選ぶと保存され、次回起動時(新しいcontainer)でも復元される', (
+      tester,
+    ) async {
       final secureStorage = FakeSecureStorageService();
       final localStore = FakeLocalStoreService();
 
@@ -582,18 +626,24 @@ void main() {
         overrides: [
           secureStorageServiceProvider.overrideWithValue(secureStorage),
           localStoreServiceProvider.overrideWithValue(localStore),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
         ],
       );
       addTearDown(container1.dispose);
-      await container1.read(connectedAppsProvider.notifier).registerApp(
+      await container1
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.zebra',
             displayName: 'Zebra iOS',
             apiKey: 'k',
           );
-      await container1.read(connectedAppsProvider.notifier).registerApp(
+      await container1
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.android,
             bundleIdOrPackageName: 'works.petit.apple',
@@ -621,7 +671,9 @@ void main() {
         overrides: [
           secureStorageServiceProvider.overrideWithValue(secureStorage),
           localStoreServiceProvider.overrideWithValue(localStore),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
         ],
       );
       addTearDown(container2.dispose);
@@ -642,24 +694,31 @@ void main() {
   });
 
   group('タグの一括編集（大量アプリ管理）', () {
-    testWidgets('選択モードでタグを追加すると全選択アプリに反映され、タグフィルターにも現れる',
-        (tester) async {
+    testWidgets('選択モードでタグを追加すると全選択アプリに反映され、タグフィルターにも現れる', (tester) async {
       final container = ProviderContainer(
         overrides: [
-          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          secureStorageServiceProvider.overrideWithValue(
+            FakeSecureStorageService(),
+          ),
           localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
         ],
       );
       addTearDown(container.dispose);
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.a',
             displayName: 'AppA',
             apiKey: 'k',
           );
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.android,
             bundleIdOrPackageName: 'works.petit.b',
@@ -705,31 +764,40 @@ void main() {
   });
 
   group('フィルター条件の不整合修正（大量アプリ管理）', () {
-    testWidgets('選択中のタグが後から全アプリから削除されても、絞り込み結果が0件のまま詰まない',
-        (tester) async {
+    testWidgets('選択中のタグが後から全アプリから削除されても、絞り込み結果が0件のまま詰まない', (tester) async {
       final container = ProviderContainer(
         overrides: [
-          secureStorageServiceProvider.overrideWithValue(FakeSecureStorageService()),
+          secureStorageServiceProvider.overrideWithValue(
+            FakeSecureStorageService(),
+          ),
           localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
         ],
       );
       addTearDown(container.dispose);
-      final a = await container.read(connectedAppsProvider.notifier).registerApp(
+      final a = await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.a',
             displayName: 'AppA',
             apiKey: 'k',
           );
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.android,
             bundleIdOrPackageName: 'works.petit.b',
             displayName: 'AppB',
             apiKey: 'k',
           );
-      await container.read(connectedAppsProvider.notifier).setTags(a.id, ['期間限定']);
+      await container.read(connectedAppsProvider.notifier).setTags(a.id, [
+        '期間限定',
+      ]);
 
       final router = buildAppRouter();
       await tester.pumpWidget(
@@ -756,17 +824,24 @@ void main() {
       expect(find.text('条件に一致するアプリがありません'), findsNothing);
     });
 
-    testWidgets('一括削除がSecure Storageの失敗で例外を投げても、エラー表示され選択状態は保持される',
-        (tester) async {
+    testWidgets('一括削除がSecure Storageの失敗で例外を投げても、エラー表示され選択状態は保持される', (
+      tester,
+    ) async {
       final container = ProviderContainer(
         overrides: [
-          secureStorageServiceProvider.overrideWithValue(_DeleteFailsSecureStorageService()),
+          secureStorageServiceProvider.overrideWithValue(
+            _DeleteFailsSecureStorageService(),
+          ),
           localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
-          widgetSyncServiceProvider.overrideWithValue(const FakeWidgetSyncService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
         ],
       );
       addTearDown(container.dispose);
-      await container.read(connectedAppsProvider.notifier).registerApp(
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
             userId: 'u1',
             platform: PlatformType.ios,
             bundleIdOrPackageName: 'works.petit.a',
@@ -798,6 +873,89 @@ void main() {
       expect(find.text('AppA'), findsOneWidget);
       expect(find.textContaining('削除に失敗しました'), findsOneWidget);
       expect(find.text('1件選択中'), findsOneWidget);
+    });
+  });
+
+  group('アクセシビリティ対応', () {
+    testWidgets('選択モード終了ボタンにツールチップが付いており、選択中のカードがSemantics上も選択済みになる', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(
+            FakeSecureStorageService(),
+          ),
+          localStoreServiceProvider.overrideWithValue(FakeLocalStoreService()),
+          widgetSyncServiceProvider.overrideWithValue(
+            const FakeWidgetSyncService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(connectedAppsProvider.notifier)
+          .registerApp(
+            userId: 'u1',
+            platform: PlatformType.ios,
+            bundleIdOrPackageName: 'works.petit.a',
+            displayName: 'AppA',
+            apiKey: 'k',
+          );
+
+      // Semantics検証には、テスト期間中ずっと有効なSemanticsHandleが要る
+      // (無いとタップ後の再計算がgetSemantics呼び出しごとに独立してしまい、
+      // 期待通りの更新が反映されないことがある)。dispose()はテスト本体の
+      // 最後で明示的に呼ぶ(addTearDownだとフレームワークの後始末チェックに
+      // 間に合わない)。
+      final semanticsHandle = tester.ensureSemantics();
+
+      final router = buildAppRouter();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: wrapWithLocalizedRouter(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 選択モードに入る前は「選択を解除」ボタン自体が存在しない。
+      expect(find.byTooltip('選択を解除'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.checklist_outlined));
+      await tester.pumpAndSettle();
+
+      // 選択モード終了(close)アイコンにアクセシブルな名前(tooltip)が付いている。
+      expect(find.byTooltip('選択を解除'), findsOneWidget);
+
+      // Semantics(selected:)はCardの外側に付与しているが、ListTile自体が
+      // onTapを持つためタップ対象として独自のSemanticsNode(ボタン境界)を
+      // 作ってしまい、Card/Text側から辿ってもその子ノードにしか行き着かない。
+      // 実際にはSemantics(selected:)の情報はそのボタン境界ノードの「親」に
+      // 付与されるため、一旦タイトルのSemanticsNodeを取得してからparentを見る。
+      SemanticsNode selectionNode() =>
+          tester.getSemantics(find.text('AppA')).parent!;
+
+      // まだ何も選択していないカードはSemantics上もselected:falseのまま。
+      // (選択モード中は必ずtrue/falseを明示するため、hasSelectedStateも常にtrue)
+      expect(
+        selectionNode(),
+        matchesSemantics(isSelected: false, hasSelectedState: true),
+      );
+
+      await tester.tap(find.widgetWithText(ListTile, 'AppA'));
+      await tester.pumpAndSettle();
+
+      // チェックすると、色だけでなくSemantics上もselected:trueになる
+      // (スクリーンリーダーでも選択状態が伝わる)。
+      expect(
+        selectionNode(),
+        matchesSemantics(isSelected: true, hasSelectedState: true),
+      );
+
+      // addTearDownでのdispose()はテスト本体の完了判定より後に走るため、
+      // 「テスト終了時にハンドルが残っている」という誤検知を避けるべく
+      // ここで明示的に解放する。
+      semanticsHandle.dispose();
     });
   });
 }

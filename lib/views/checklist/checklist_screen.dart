@@ -25,9 +25,7 @@ class ChecklistScreen extends ConsumerWidget {
     final checklistService = ref.read(checklistServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.checklistTitle(app.displayName)),
-      ),
+      appBar: AppBar(title: Text(l10n.checklistTitle(app.displayName))),
       body: Column(
         children: [
           Padding(
@@ -63,7 +61,9 @@ class _ProgressSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final passCount = items.where((i) => i.result == ChecklistResult.pass).length;
+    final passCount = items
+        .where((i) => i.result == ChecklistResult.pass)
+        .length;
     final total = items.length;
     final progress = total == 0 ? 0.0 : passCount / total;
     final allPassed = total > 0 && passCount == total;
@@ -91,6 +91,10 @@ class _ProgressSummary extends StatelessWidget {
               color: AppTheme.primary,
               minHeight: 6,
               borderRadius: BorderRadius.circular(3),
+              // 進捗バー自体は視覚的な塗り具合でしか割合を伝えないため、
+              // スクリーンリーダー向けに明示的な値を持たせる(アクセシビリティ対応)。
+              semanticsLabel: l10n.checklistProgress(passCount, total),
+              semanticsValue: '${(progress * 100).round()}%',
             ),
           ],
         ),

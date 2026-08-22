@@ -28,6 +28,7 @@
     "placeholders": {"count": {"type": "int"}}
   },
   "dashboardSelectModeTooltip": "選択",
+  "dashboardExitSelectionTooltip": "選択を解除",
   "dashboardSelectedCount": "{count}件選択中",
   "@dashboardSelectedCount": {
     "placeholders": {"count": {"type": "int"}}

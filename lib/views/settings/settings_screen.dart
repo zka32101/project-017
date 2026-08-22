@@ -26,9 +26,9 @@ Future<void> _exportAppRoster(
   final path = await ref.read(exportServiceProvider).exportAppRoster(apps);
   if (!context.mounted) return;
   if (path == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.settingsExportRosterFailed)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.settingsExportRosterFailed)));
     return;
   }
   await Share.shareXFiles([XFile(path)]);
@@ -65,7 +65,10 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             title: Text(l10n.settingsPlanLabel),
             subtitle: Text(
-                plan == UserPlan.pro ? l10n.settingsPlanPro : l10n.settingsPlanFree),
+              plan == UserPlan.pro
+                  ? l10n.settingsPlanPro
+                  : l10n.settingsPlanFree,
+            ),
             trailing: plan == UserPlan.free
                 ? TextButton(
                     onPressed: () => context.push('/paywall'),
@@ -123,8 +126,9 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
   // initState時点・再登録成功時に呼び、buildのたびにSecure Storageへ
   // 再アクセスしないようFutureをキャッシュする。
   void _refreshApiKeyFuture() {
-    _apiKeyFuture =
-        ref.read(secureStorageServiceProvider).readApiKey(widget.app.id);
+    _apiKeyFuture = ref
+        .read(secureStorageServiceProvider)
+        .readApiKey(widget.app.id);
   }
 
   /// APIキーの再登録(ローテーション)。App Store Connect/Play Consoleの
@@ -148,15 +152,15 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
         _rotating = false;
         _refreshApiKeyFuture();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.settingsRotateApiKeySuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.settingsRotateApiKeySuccess)));
     } catch (e) {
       if (!mounted) return;
       setState(() => _rotating = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.settingsRemoveFailed('$e'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.settingsRemoveFailed('$e'))));
     }
   }
 
@@ -168,7 +172,9 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.settingsRemoveConfirmTitle),
-        content: Text(l10n.settingsRemoveConfirmMessage(widget.app.displayName)),
+        content: Text(
+          l10n.settingsRemoveConfirmMessage(widget.app.displayName),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -176,8 +182,10 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.commonDelete,
-                style: const TextStyle(color: AppTheme.danger)),
+            child: Text(
+              l10n.commonDelete,
+              style: const TextStyle(color: AppTheme.danger),
+            ),
           ),
         ],
       ),
@@ -196,9 +204,9 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _removing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.settingsRemoveFailed('$e'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.settingsRemoveFailed('$e'))));
     }
   }
 
@@ -234,6 +242,7 @@ class _AppSettingsTileState extends ConsumerState<_AppSettingsTile> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
+                  tooltip: l10n.commonDelete,
                   onPressed: _confirmAndRemove,
                 ),
               ],
@@ -272,8 +281,9 @@ class _RotateApiKeyDialogState extends State<_RotateApiKeyDialog> {
       content: TextField(
         controller: _controller,
         maxLines: 4,
-        decoration:
-            InputDecoration(hintText: widget.l10n.appRegistrationApiKeyLabel),
+        decoration: InputDecoration(
+          hintText: widget.l10n.appRegistrationApiKeyLabel,
+        ),
       ),
       actions: [
         TextButton(
@@ -321,8 +331,7 @@ class _RevenueCatConnectionTileState
     super.dispose();
   }
 
-  RevenueCatOAuthService get _oauth =>
-      ref.read(revenueCatOAuthServiceProvider);
+  RevenueCatOAuthService get _oauth => ref.read(revenueCatOAuthServiceProvider);
 
   Future<void> _refreshStatus() async {
     final connected = await _oauth.isConnected();
@@ -388,8 +397,8 @@ class _RevenueCatConnectionTileState
             connected == null
                 ? ''
                 : (connected
-                    ? l10n.settingsRevenueCatConnected
-                    : l10n.settingsRevenueCatNotConnected),
+                      ? l10n.settingsRevenueCatConnected
+                      : l10n.settingsRevenueCatNotConnected),
           ),
           trailing: _busy
               ? const SizedBox(
@@ -398,15 +407,16 @@ class _RevenueCatConnectionTileState
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : (connected == true
-                  ? TextButton(
-                      onPressed: _disconnect,
-                      child: Text(l10n.settingsRevenueCatDisconnectButton),
-                    )
-                  : TextButton(
-                      onPressed: () =>
-                          setState(() => _showConnectForm = !_showConnectForm),
-                      child: Text(l10n.settingsRevenueCatConnectButton),
-                    )),
+                    ? TextButton(
+                        onPressed: _disconnect,
+                        child: Text(l10n.settingsRevenueCatDisconnectButton),
+                      )
+                    : TextButton(
+                        onPressed: () => setState(
+                          () => _showConnectForm = !_showConnectForm,
+                        ),
+                        child: Text(l10n.settingsRevenueCatConnectButton),
+                      )),
         ),
         if (connected == false && _showConnectForm)
           Padding(
@@ -478,14 +488,16 @@ class _NotificationToggleTileState
   /// 保存値の両方をOFFへ補正する。
   Future<void> _refreshState() async {
     final secureStorage = ref.read(secureStorageServiceProvider);
-    final storedValue =
-        await secureStorage.readValue(notificationsEnabledStorageKey);
+    final storedValue = await secureStorage.readValue(
+      notificationsEnabledStorageKey,
+    );
     final storedEnabled = storedValue == 'true';
 
     var effectiveEnabled = storedEnabled;
     if (storedEnabled) {
-      final osGranted =
-          await ref.read(notificationServiceProvider).isPermissionGranted();
+      final osGranted = await ref
+          .read(notificationServiceProvider)
+          .isPermissionGranted();
       if (!osGranted) {
         effectiveEnabled = false;
         await secureStorage.writeValue(

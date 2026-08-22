@@ -6,6 +6,7 @@ import 'l10n/gen/app_localizations.dart';
 import 'router/app_router.dart';
 import 'services/ad_service.dart';
 import 'services/cloud_sync_service.dart';
+import 'services/export_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
 import 'theme/app_theme.dart';
@@ -13,7 +14,10 @@ import 'theme/app_theme.dart';
 /// 通知・広告・課金SDKはいずれも副次的な機能であり、初期化失敗がアプリの
 /// 起動そのもの(runApp)をブロックしてはならない。個別にcatchし、失敗しても
 /// 残りの初期化とアプリ起動は続行する(該当機能が単に動かないだけになる)。
-Future<void> _initializeSilently(String name, Future<void> Function() init) async {
+Future<void> _initializeSilently(
+  String name,
+  Future<void> Function() init,
+) async {
   try {
     await init();
   } catch (e, st) {
@@ -33,8 +37,9 @@ void main() async {
   final router = buildAppRouter();
   // 通知タップ時にディープリンク先を開けるよう、GoRouterのpushを
   // NotificationServiceへ渡す(審査状態の個別通知、Should機能)。
-  final notificationService =
-      LocalNotificationService(onNotificationTap: router.push);
+  final notificationService = LocalNotificationService(
+    onNotificationTap: router.push,
+  );
 
   // 4つとも互いに依存が無く、それぞれ_initializeSilently内で自身の失敗を
   // 握りつぶすため、直列にawaitして起動を待たせる理由が無い。並行実行して
@@ -53,9 +58,19 @@ void main() async {
     }),
     _initializeSilently('広告SDK', () => const AdService().initialize()),
     _initializeSilently(
-        '課金SDK', () => RevenueCatPurchaseService().initialize()),
+      '課金SDK',
+      () => RevenueCatPurchaseService().initialize(),
+    ),
     _initializeSilently(
-        'クラウド同期', () => FirebaseCloudSyncService().initialize()),
+      'クラウド同期',
+      () => FirebaseCloudSyncService().initialize(),
+    ),
+    // エクスポート機能が「有効期限24時間」と表示する契約を実際に守るため、
+    // 期限切れファイルを起動のたびに掃除する(export_service.dart参照)。
+    _initializeSilently(
+      'エクスポートファイルの期限切れ掃除',
+      () => const ExportService().purgeExpiredExports(),
+    ),
   ]);
   runApp(ProviderScope(child: RirikanApp(router: router)));
 }

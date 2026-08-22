@@ -74,6 +74,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardSelectModeTooltip => 'Select';
 
   @override
+  String get dashboardExitSelectionTooltip => 'Exit selection';
+
+  @override
   String dashboardSelectedCount(int count) {
     return '$count selected';
   }

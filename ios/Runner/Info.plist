@@ -28,7 +28,7 @@
 	     App ID(実際の広告枠には紐づかない)。本番リリース前に、実際に
 	     AdMobで作成したApp IDへ置き換えること。 -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-5058227312086483~3279128354</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

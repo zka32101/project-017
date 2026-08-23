@@ -14,8 +14,8 @@ class AdService {
 
   /// テスト用(Google公式デモ広告ID)。本番では実際の広告ユニットIDに置き換える。
   static String get bannerAdUnitId => Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/6300978111'
-      : 'ca-app-pub-3940256099942544/2934735716';
+      ? 'ca-app-pub-5058227312086483/6824611378'
+      : 'ca-app-pub-5058227312086483/3359019401';
 
   /// main()で1回だけ呼ぶ（Widget buildからは呼ばない。flutter test環境では
   /// プラットフォームチャネル呼び出しで落ちるため、テストでは呼ばれないようにする）。

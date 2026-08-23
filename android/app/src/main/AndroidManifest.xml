@@ -57,7 +57,7 @@
              AdMobで作成したApp IDへ置き換えること。 -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-5058227312086483~3279128354"/>
 
         <!-- リリカン ホーム画面ウィジェット（Should機能の土台、home_widgetパッケージ経由） -->
         <receiver

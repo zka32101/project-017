@@ -1,4 +1,4 @@
-package works.petit.ririkan
+package com.yourwish.ririkan
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider

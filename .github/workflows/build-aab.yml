@@ -1,0 +1,68 @@
+name: Build AAB
+
+# Android App Bundle（AAB）ビルド専用ワークフロー。
+#
+# Google Play Console へのアップロード用。
+# APKと異なり、Google Play が各デバイス構成に最適化した APK を自動生成する。
+#
+# main へのマージ時に自動ビルドし、手動実行（workflow_dispatch）でも
+# いつでも起動できるようにしている。
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+# GITHUB_TOKENの既定権限（リポジトリ設定次第でread-write相当になり得る）に
+# 依存せず、このワークフローが実際に必要とする最小権限を明示する
+# （app-privacy-security チェックリスト: CI/CDのpermissions最小化）。
+# checkout・pub get・analyze・test・build・artifact upload のいずれも
+# リポジトリ内容の読み取りのみで完結し、書き込み権限は不要。
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build release AAB
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build release AAB
+        run: flutter build appbundle --release
+
+      - name: Rename AAB to match distribution naming convention
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/bundle/release/app-release.aab dist/ririkan-app-release.aab
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ririkan-app-release-aab
+          path: dist/ririkan-app-release.aab
+          retention-days: 30

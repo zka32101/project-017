@@ -48,6 +48,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Decode and setup signing keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/app/ririkan-release-key.jks
+          ls -lh android/app/ririkan-release-key.jks
+
       - name: Analyze
         run: flutter analyze
 
@@ -55,6 +60,11 @@ jobs:
         run: flutter test
 
       - name: Build release APK
+        env:
+          KEYSTORE_PATH: android/app/ririkan-release-key.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release
 
       - name: Rename APK to match distribution naming convention

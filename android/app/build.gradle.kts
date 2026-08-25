@@ -42,13 +42,32 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        create("release") {
+            // GitHub Actions (CI環境)からの署名設定。
+            // GitHub Secrets に登録された以下の値を environment variables で受け取る:
+            // - ANDROID_KEYSTORE_FILE (Base64 encoded)
+            // - ANDROID_KEYSTORE_PASSWORD
+            // - ANDROID_KEY_ALIAS
+            // - ANDROID_KEY_PASSWORD
+            val keystorePath = System.getenv("KEYSTORE_PATH") ?: "ririkan-release-key.jks"
+            val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
+            val keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: ""
+            val keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+
+            if (keystorePassword.isNotEmpty() && keyAlias.isNotEmpty()) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Google Play Console用のリリース署名設定を使用。
+            // GitHub Actions では環境変数から読み込む。
+            signingConfig = signingConfigs.getByName("release")
             // 実機検証で「Failed to create an instance of androidx.work.impl.WorkDatabase」
             // が発生（R8圧縮によりRoom生成クラスがリフレクション経由で解決できなくなったと推測）。
             // MVP段階ではAPKサイズ最適化より安定動作を優先し、明示的にminify/shrinkを無効化する。

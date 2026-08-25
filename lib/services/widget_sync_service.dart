@@ -50,7 +50,7 @@ class WidgetSyncService {
 
     await HomeWidget.updateWidget(
       androidName: 'RirikanStatusWidgetProvider',
-      qualifiedAndroidName: 'works.petit.ririkan.RirikanStatusWidgetProvider',
+      qualifiedAndroidName: 'com.yourwish.ririkan.RirikanStatusWidgetProvider',
       iOSName: 'RirikanStatusWidget',
     );
   }

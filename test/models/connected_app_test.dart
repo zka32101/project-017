@@ -9,7 +9,7 @@ void main() {
         id: 'app1',
         userId: 'user1',
         platform: PlatformType.ios,
-        bundleIdOrPackageName: 'works.petit.ririkan',
+        bundleIdOrPackageName: 'com.yourwish.ririkan',
         apiKeyRef: 'app1',
         displayName: 'リリカン',
         sortOrder: 0,
@@ -28,7 +28,7 @@ void main() {
         id: 'app2',
         userId: 'user1',
         platform: PlatformType.android,
-        bundleIdOrPackageName: 'works.petit.ririkan',
+        bundleIdOrPackageName: 'com.yourwish.ririkan',
         displayName: 'リリカン',
         sortOrder: 0,
       );
@@ -40,7 +40,7 @@ void main() {
         id: 'app1',
         userId: 'user1',
         platform: PlatformType.ios,
-        bundleIdOrPackageName: 'works.petit.ririkan',
+        bundleIdOrPackageName: 'com.yourwish.ririkan',
         displayName: 'リリカン',
         sortOrder: 0,
       );
@@ -55,7 +55,7 @@ void main() {
         id: 'app1',
         userId: 'user1',
         platform: PlatformType.ios,
-        bundleIdOrPackageName: 'works.petit.ririkan',
+        bundleIdOrPackageName: 'com.yourwish.ririkan',
         displayName: 'リリカン',
         sortOrder: 0,
       );
@@ -70,7 +70,7 @@ void main() {
         id: 'app1',
         userId: 'user1',
         platform: PlatformType.ios,
-        bundleIdOrPackageName: 'works.petit.ririkan',
+        bundleIdOrPackageName: 'com.yourwish.ririkan',
         displayName: 'リリカン',
         sortOrder: 0,
       );
@@ -86,7 +86,7 @@ void main() {
         id: 'app1',
         userId: 'user1',
         platform: PlatformType.ios,
-        bundleIdOrPackageName: 'works.petit.ririkan',
+        bundleIdOrPackageName: 'com.yourwish.ririkan',
         displayName: 'リリカン',
         sortOrder: 0,
       );
@@ -94,7 +94,7 @@ void main() {
         id: 'app2',
         userId: 'user1',
         platform: PlatformType.ios,
-        bundleIdOrPackageName: 'works.petit.ririkan',
+        bundleIdOrPackageName: 'com.yourwish.ririkan',
         displayName: 'リリカン',
         sortOrder: 0,
       );

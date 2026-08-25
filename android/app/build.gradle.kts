@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "works.petit.ririkan"
+    namespace = "com.yourwish.ririkan"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -17,7 +17,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "works.petit.ririkan"
+        applicationId = "com.yourwish.ririkan"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // google_mobile_ads(9.1.0)がminSdk 24を要求するため、21から引き上げ

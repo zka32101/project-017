@@ -45,17 +45,16 @@ android {
         create("release") {
             // GitHub Actions (CI環境)からの署名設定。
             // GitHub Secrets に登録された以下の値を environment variables で受け取る:
-            // - ANDROID_KEYSTORE_FILE (Base64 encoded)
             // - ANDROID_KEYSTORE_PASSWORD
             // - ANDROID_KEY_ALIAS
             // - ANDROID_KEY_PASSWORD
-            val keystorePath = System.getenv("KEYSTORE_PATH") ?: "ririkan-release-key.jks"
+            // keystoreファイルは android/app/ririkan-release-key.jks に存在。
             val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
             val keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: ""
             val keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: ""
 
             if (keystorePassword.isNotEmpty() && keyAlias.isNotEmpty()) {
-                storeFile = file(keystorePath)
+                storeFile = file("ririkan-release-key.jks")
                 storePassword = keystorePassword
                 this.keyAlias = keyAlias
                 this.keyPassword = keyPassword

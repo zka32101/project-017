@@ -61,7 +61,7 @@ jobs:
           cp build/app/outputs/bundle/release/app-release.aab dist/ririkan-app-release.aab
 
       - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ririkan-app-release-aab
           path: dist/ririkan-app-release.aab
